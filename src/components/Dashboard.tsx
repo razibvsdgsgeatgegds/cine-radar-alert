@@ -1,13 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
-import { Settings, Radar, Calendar, Bell, Star, TrendingUp, Zap } from 'lucide-react';
+import { Settings, Radar, Calendar, Bell, Star, TrendingUp, Zap, Loader2 } from 'lucide-react';
+import { ContentCard } from '@/components/ContentCard';
+import { Movie, TVShow } from '@/types';
+import { tmdbApi } from '@/services/tmdb';
+import { getMovieGenreIds, getSeriesGenreIds } from '@/utils/genreMapping';
 import heroImage from '@/assets/hero-radar.jpg';
 
 export const Dashboard: React.FC = () => {
   const { user, clearUser } = useUser();
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [series, setSeries] = useState<TVShow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        
+        // Get user's preferred genre IDs
+        const movieGenreIds = getMovieGenreIds(user.interests.movies);
+        const seriesGenreIds = getSeriesGenreIds(user.interests.series);
+
+        // Fetch personalized content
+        const [moviesData, seriesData] = await Promise.all([
+          movieGenreIds.length > 0 
+            ? tmdbApi.discoverMoviesByGenre(movieGenreIds)
+            : tmdbApi.getUpcomingMovies(),
+          seriesGenreIds.length > 0
+            ? tmdbApi.discoverSeriesByGenre(seriesGenreIds) 
+            : tmdbApi.getUpcomingSeries()
+        ]);
+
+        setMovies(moviesData.results?.slice(0, 6) || []);
+        setSeries(seriesData.results?.slice(0, 6) || []);
+      } catch (error) {
+        console.error('Error fetching content:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContent();
+  }, [user]);
 
   if (!user) return null;
 
@@ -125,18 +165,18 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Content Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Upcoming Movies */}
           <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center text-neon-cyan">
                 <Star className="w-5 h-5 mr-2" />
-                Upcoming Movies
+                Movies for You
               </CardTitle>
               <CardDescription>Based on your movie preferences</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex flex-wrap gap-2 mb-4">
                   {user.interests.movies.slice(0, 3).map(genre => (
                     <Badge key={genre} variant="outline" className="border-neon-cyan/30 text-neon-cyan">
@@ -149,10 +189,24 @@ export const Dashboard: React.FC = () => {
                     </Badge>
                   )}
                 </div>
-                <div className="text-center text-muted-foreground py-8">
-                  <Radar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Connect API to show upcoming movies</p>
-                </div>
+                
+                {loading ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
+                    <p>Loading personalized movies...</p>
+                  </div>
+                ) : movies.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {movies.map(movie => (
+                      <ContentCard key={movie.id} item={movie} type="movie" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Radar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No movies found for your preferences</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -162,12 +216,12 @@ export const Dashboard: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center text-neon-pink">
                 <TrendingUp className="w-5 h-5 mr-2" />
-                Upcoming Series
+                Series for You
               </CardTitle>
               <CardDescription>Based on your series preferences</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex flex-wrap gap-2 mb-4">
                   {user.interests.series.slice(0, 3).map(genre => (
                     <Badge key={genre} variant="outline" className="border-neon-pink/30 text-neon-pink">
@@ -180,40 +234,55 @@ export const Dashboard: React.FC = () => {
                     </Badge>
                   )}
                 </div>
-                <div className="text-center text-muted-foreground py-8">
-                  <Radar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Connect API to show upcoming series</p>
-                </div>
+                
+                {loading ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
+                    <p>Loading personalized series...</p>
+                  </div>
+                ) : series.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {series.map(show => (
+                      <ContentCard key={show.id} item={show} type="series" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Radar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No series found for your preferences</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Upcoming Games */}
-          <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+          {/* Games Section - Placeholder for future IGDB integration */}
+          <Card className="bg-card/50 backdrop-blur-sm border-primary/20 lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center text-golden">
                 <Zap className="w-5 h-5 mr-2" />
                 Upcoming Games
               </CardTitle>
-              <CardDescription>Based on your gaming preferences</CardDescription>
+              <CardDescription>Gaming releases based on your preferences</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {user.interests.games.slice(0, 3).map(genre => (
+                  {user.interests.games.slice(0, 5).map(genre => (
                     <Badge key={genre} variant="outline" className="border-golden/30 text-golden">
                       {genre}
                     </Badge>
                   ))}
-                  {user.interests.games.length > 3 && (
+                  {user.interests.games.length > 5 && (
                     <Badge variant="outline" className="border-golden/30 text-golden">
-                      +{user.interests.games.length - 3} more
+                      +{user.interests.games.length - 5} more
                     </Badge>
                   )}
                 </div>
-                <div className="text-center text-muted-foreground py-8">
-                  <Radar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Connect API to show upcoming games</p>
+                <div className="text-center text-muted-foreground py-12">
+                  <Zap className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium mb-2">IGDB Integration Coming Soon</h3>
+                  <p>Game releases and recommendations will be available once IGDB API is integrated.</p>
                 </div>
               </div>
             </CardContent>
