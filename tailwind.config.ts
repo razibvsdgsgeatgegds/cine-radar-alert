@@ -52,6 +52,12 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Entertainment theme colors
+				'neon-purple': 'hsl(var(--neon-purple))',
+				'neon-cyan': 'hsl(var(--neon-cyan))',
+				'neon-pink': 'hsl(var(--neon-pink))',
+				'electric-blue': 'hsl(var(--electric-blue))',
+				'golden': 'hsl(var(--golden))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -63,10 +69,22 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				}
 			},
+			backgroundImage: {
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-secondary': 'var(--gradient-secondary)',
+				'gradient-accent': 'var(--gradient-accent)',
+				'gradient-dark': 'var(--gradient-dark)',
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				'neon': 'var(--shadow-neon)',
+				'glow': 'var(--shadow-glow)',
+				'card': 'var(--shadow-card)',
 			},
 			keyframes: {
 				'accordion-down': {
