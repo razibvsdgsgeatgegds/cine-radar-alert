@@ -17,9 +17,27 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedUser = localStorage.getItem('radar-user');
     if (savedUser) {
       try {
-        setUserState(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        // Add default values for new fields if they don't exist
+        const defaultUser: UserPreferences = {
+          name: '',
+          email: '',
+          gender: '',
+          age: 0,
+          location: { country: '' },
+          interests: { movies: [], series: [], games: [] },
+          notifications_enabled: false,
+          languages: [],
+          industries: [],
+          platforms: [],
+          notification_list: [],
+          ...parsedUser,
+          location: { country: parsedUser.location?.country || '' },
+        };
+        setUserState(defaultUser);
       } catch (error) {
         console.error('Failed to parse saved user data:', error);
+        localStorage.removeItem('radar-user');
       }
     }
   }, []);

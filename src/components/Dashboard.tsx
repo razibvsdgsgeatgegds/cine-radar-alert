@@ -1,294 +1,235 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
-import { Settings, Radar, Calendar, Bell, Star, TrendingUp, Zap, Loader2 } from 'lucide-react';
+import { Settings, Radar, Star, TrendingUp, Loader2 } from 'lucide-react';
 import { ContentCard } from '@/components/ContentCard';
+import { ContentDetailsDialog } from '@/components/ContentDetailsDialog';
 import { Movie, TVShow } from '@/types';
 import { tmdbApi } from '@/services/tmdb';
 import { getMovieGenreIds, getSeriesGenreIds } from '@/utils/genreMapping';
-import heroImage from '@/assets/hero-radar.jpg';
+import { useNavigate } from 'react-router-dom';
+import { NotificationPrompt } from './NotificationPrompt';
+import { DashboardFilters } from './DashboardFilters';
+import { toast } from 'sonner';
 
 export const Dashboard: React.FC = () => {
-  const { user, clearUser } = useUser();
+  const { user, setUser } = useUser();
+  const navigate = useNavigate();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [series, setSeries] = useState<TVShow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<{ item: Movie | TVShow; type: 'movie' | 'series' } | null>(null);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [filters, setFilters] = useState({
+    languages: user?.languages || [],
+    industries: user?.industries || [],
+    platforms: user?.platforms || [],
+    dateRange: 'all',
+  });
+
+  const fetchContent = useCallback(async (currentFilters: typeof filters) => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      const movieGenreIds = getMovieGenreIds(user.interests.movies);
+      const seriesGenreIds = getSeriesGenreIds(user.interests.series);
+
+      const [moviesData, seriesData] = await Promise.all([
+        tmdbApi.discoverMovies(movieGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.platforms, currentFilters.dateRange),
+        tmdbApi.discoverSeries(seriesGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.platforms, currentFilters.dateRange),
+      ]);
+
+      setMovies(moviesData.results?.slice(0, 12) || []);
+      setSeries(seriesData.results?.slice(0, 12) || []);
+    } catch (error) {
+      console.error('Error fetching content:', error);
+      toast.error("Failed to fetch content. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const checkAndSendReleaseNotifications = useCallback(() => {
+    if (!user || !user.notifications_enabled || user.notification_list.length === 0) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const releasedItems: { id: number; type: 'movie' | 'series' }[] = [];
+    const updatedNotificationList = user.notification_list.filter(item => {
+      const releaseDate = new Date(item.date);
+      releaseDate.setHours(0,0,0,0);
+      
+      if (releaseDate <= today) {
+        new Notification(`Release Alert: ${item.name}`, {
+          body: `${item.name} is now available!`,
+          icon: tmdbApi.getPosterUrl(item.poster_path),
+        });
+        releasedItems.push({ id: item.id, type: item.type });
+        return false; // Remove from list
+      }
+      return true; // Keep in list
+    });
+
+    if (releasedItems.length > 0) {
+      setUser({ ...user, notification_list: updatedNotificationList });
+      toast.info(`${releasedItems.length} item(s) on your watchlist have been released!`);
+    }
+  }, [user, setUser]);
 
   useEffect(() => {
-    const fetchContent = async () => {
-      if (!user) return;
+    if (user) {
+      fetchContent(filters);
+      checkAndSendReleaseNotifications();
 
-      try {
-        setLoading(true);
-        
-        // Get user's preferred genre IDs
-        const movieGenreIds = getMovieGenreIds(user.interests.movies);
-        const seriesGenreIds = getSeriesGenreIds(user.interests.series);
-
-        // Fetch personalized content
-        const [moviesData, seriesData] = await Promise.all([
-          movieGenreIds.length > 0 
-            ? tmdbApi.discoverMoviesByGenre(movieGenreIds)
-            : tmdbApi.getUpcomingMovies(),
-          seriesGenreIds.length > 0
-            ? tmdbApi.discoverSeriesByGenre(seriesGenreIds) 
-            : tmdbApi.getUpcomingSeries()
-        ]);
-
-        setMovies(moviesData.results?.slice(0, 6) || []);
-        setSeries(seriesData.results?.slice(0, 6) || []);
-      } catch (error) {
-        console.error('Error fetching content:', error);
-      } finally {
-        setLoading(false);
+      if ('Notification' in window && Notification.permission === 'default') {
+        const dismissed = sessionStorage.getItem('notificationPromptDismissed');
+        if (!dismissed) {
+          const timer = setTimeout(() => setShowNotificationPrompt(true), 3000);
+          return () => clearTimeout(timer);
+        }
       }
-    };
+    }
+  }, [user, fetchContent, checkAndSendReleaseNotifications]);
 
-    fetchContent();
-  }, [user]);
+  const handleCardClick = (item: Movie | TVShow, type: 'movie' | 'series') => {
+    setSelectedItem({ item, type });
+  };
+
+  const handlePromptDismiss = () => {
+    sessionStorage.setItem('notificationPromptDismissed', 'true');
+    setShowNotificationPrompt(false);
+  };
+
+  const handleApplyFilters = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    fetchContent(newFilters);
+  };
+
+  const handleToggleNotification = (e: React.MouseEvent, item: Movie | TVShow, type: 'movie' | 'series') => {
+    e.stopPropagation();
+    if (!user) return;
+
+    const isInList = user.notification_list.some(i => i.id === item.id && i.type === type);
+    let newNotificationList;
+
+    if (isInList) {
+      newNotificationList = user.notification_list.filter(i => !(i.id === item.id && i.type === type));
+      toast.info("Removed from your notification list.");
+    } else {
+      if (!user.notifications_enabled) {
+        toast.error("Enable notifications in settings first!");
+        return;
+      }
+      const newItem = {
+        id: item.id,
+        type: type,
+        name: type === 'movie' ? (item as Movie).title : (item as TVShow).name,
+        date: type === 'movie' ? (item as Movie).release_date : (item as TVShow).first_air_date,
+        poster_path: item.poster_path,
+      };
+      newNotificationList = [...user.notification_list, newItem];
+      toast.success("Added to your notification list!");
+    }
+    setUser({ ...user, notification_list: newNotificationList });
+  };
 
   if (!user) return null;
 
-  const totalInterests = user.interests.movies.length + user.interests.series.length + user.interests.games.length;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-      {/* Header */}
-      <header className="border-b border-border/50 backdrop-blur-sm bg-card/20">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-neon-pink rounded-lg flex items-center justify-center">
-              <Radar className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-neon-pink bg-clip-text text-transparent">
-                RadarApp
-              </h1>
-              <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
-              <Bell className="w-4 h-4 mr-2" />
-              Notifications
-            </Button>
-            <Button variant="outline" size="sm" onClick={clearUser}>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden rounded-2xl mb-8">
-          <div className="absolute inset-0">
-            <img 
-              src={heroImage} 
-              alt="Entertainment Radar" 
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-transparent" />
-          </div>
-          
-          <div className="relative z-10 p-8 lg:p-12">
-            <div className="max-w-2xl">
-              <h2 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-neon-cyan bg-clip-text text-transparent">
-                Your Entertainment Radar
-              </h2>
-              <p className="text-lg text-foreground/80 mb-6">
-                Discover upcoming movies, series, and games tailored to your interests. Never miss a release again!
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button className="bg-gradient-to-r from-primary to-neon-pink hover:shadow-lg hover:shadow-primary/25">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Scan for Updates
-                </Button>
-                <Button variant="outline" className="border-primary/20 hover:border-primary">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  View Calendar
-                </Button>
+    <>
+      <NotificationPrompt
+        open={showNotificationPrompt}
+        onOpenChange={setShowNotificationPrompt}
+        onDismiss={handlePromptDismiss}
+      />
+      <ContentDetailsDialog
+        item={selectedItem?.item || null}
+        type={selectedItem?.type || 'movie'}
+        open={!!selectedItem}
+        onOpenChange={(open) => !open && setSelectedItem(null)}
+      />
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
+        <header className="border-b border-border/50 backdrop-blur-sm bg-card/20 sticky top-0 z-20">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-neon-pink rounded-lg flex items-center justify-center">
+                <Radar className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-neon-pink bg-clip-text text-transparent">
+                  RadarApp
+                </h1>
+                <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>
               </div>
             </div>
+            
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
+            </div>
           </div>
-        </section>
+        </header>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-neon-cyan/10 to-electric-blue/10 border-neon-cyan/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-neon-cyan">Movies Tracked</CardTitle>
-              <Star className="h-4 w-4 text-neon-cyan" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-neon-cyan">{user.interests.movies.length}</div>
-              <p className="text-xs text-muted-foreground">genres selected</p>
-            </CardContent>
-          </Card>
+        <div className="container mx-auto px-4 py-8">
+          <DashboardFilters initialFilters={filters} onApplyFilters={handleApplyFilters} loading={loading} />
 
-          <Card className="bg-gradient-to-br from-neon-pink/10 to-primary/10 border-neon-pink/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-neon-pink">Series Tracked</CardTitle>
-              <TrendingUp className="h-4 w-4 text-neon-pink" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-neon-pink">{user.interests.series.length}</div>
-              <p className="text-xs text-muted-foreground">genres selected</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-golden/10 to-accent/10 border-golden/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-golden">Games Tracked</CardTitle>
-              <Zap className="h-4 w-4 text-golden" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-golden">{user.interests.games.length}</div>
-              <p className="text-xs text-muted-foreground">genres selected</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Interests</CardTitle>
-              <Radar className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalInterests}</div>
-              <p className="text-xs text-muted-foreground">across all categories</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Content Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Upcoming Movies */}
-          <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center text-neon-cyan">
-                <Star className="w-5 h-5 mr-2" />
-                Movies for You
-              </CardTitle>
-              <CardDescription>Based on your movie preferences</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {user.interests.movies.slice(0, 3).map(genre => (
-                    <Badge key={genre} variant="outline" className="border-neon-cyan/30 text-neon-cyan">
-                      {genre}
-                    </Badge>
-                  ))}
-                  {user.interests.movies.length > 3 && (
-                    <Badge variant="outline" className="border-neon-cyan/30 text-neon-cyan">
-                      +{user.interests.movies.length - 3} more
-                    </Badge>
-                  )}
-                </div>
-                
+          <div className="space-y-8">
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+              <CardHeader><CardTitle className="flex items-center text-neon-cyan"><Star className="w-5 h-5 mr-2" />Upcoming Movies</CardTitle><CardDescription>Based on your movie preferences</CardDescription></CardHeader>
+              <CardContent>
                 {loading ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
-                    <p>Loading personalized movies...</p>
-                  </div>
+                  <div className="text-center text-muted-foreground py-8"><Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" /><p>Scanning for upcoming movies...</p></div>
                 ) : movies.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {movies.map(movie => (
-                      <ContentCard key={movie.id} item={movie} type="movie" />
+                      <ContentCard 
+                        key={movie.id} 
+                        item={movie} 
+                        type="movie" 
+                        onClick={() => handleCardClick(movie, 'movie')}
+                        onToggleNotification={(e) => handleToggleNotification(e, movie, 'movie')}
+                        isNotificationEnabled={user.notification_list.some(i => i.id === movie.id && i.type === 'movie')}
+                      />
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Radar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No movies found for your preferences</p>
-                  </div>
+                  <div className="text-center text-muted-foreground py-8"><Radar className="w-12 h-12 mx-auto mb-2 opacity-50" /><p>No upcoming movies found for your preferences.</p></div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Upcoming Series */}
-          <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center text-neon-pink">
-                <TrendingUp className="w-5 h-5 mr-2" />
-                Series for You
-              </CardTitle>
-              <CardDescription>Based on your series preferences</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {user.interests.series.slice(0, 3).map(genre => (
-                    <Badge key={genre} variant="outline" className="border-neon-pink/30 text-neon-pink">
-                      {genre}
-                    </Badge>
-                  ))}
-                  {user.interests.series.length > 3 && (
-                    <Badge variant="outline" className="border-neon-pink/30 text-neon-pink">
-                      +{user.interests.series.length - 3} more
-                    </Badge>
-                  )}
-                </div>
-                
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+              <CardHeader><CardTitle className="flex items-center text-neon-pink"><TrendingUp className="w-5 h-5 mr-2" />Upcoming Series</CardTitle><CardDescription>Based on your series preferences</CardDescription></CardHeader>
+              <CardContent>
                 {loading ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
-                    <p>Loading personalized series...</p>
-                  </div>
+                  <div className="text-center text-muted-foreground py-8"><Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" /><p>Scanning for upcoming series...</p></div>
                 ) : series.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {series.map(show => (
-                      <ContentCard key={show.id} item={show} type="series" />
+                      <ContentCard 
+                        key={show.id} 
+                        item={show} 
+                        type="series" 
+                        onClick={() => handleCardClick(show, 'series')} 
+                        onToggleNotification={(e) => handleToggleNotification(e, show, 'series')}
+                        isNotificationEnabled={user.notification_list.some(i => i.id === show.id && i.type === 'series')}
+                      />
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Radar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No series found for your preferences</p>
-                  </div>
+                  <div className="text-center text-muted-foreground py-8"><Radar className="w-12 h-12 mx-auto mb-2 opacity-50" /><p>No upcoming series found for your preferences.</p></div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Games Section - Placeholder for future IGDB integration */}
-          <Card className="bg-card/50 backdrop-blur-sm border-primary/20 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center text-golden">
-                <Zap className="w-5 h-5 mr-2" />
-                Upcoming Games
-              </CardTitle>
-              <CardDescription>Gaming releases based on your preferences</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {user.interests.games.slice(0, 5).map(genre => (
-                    <Badge key={genre} variant="outline" className="border-golden/30 text-golden">
-                      {genre}
-                    </Badge>
-                  ))}
-                  {user.interests.games.length > 5 && (
-                    <Badge variant="outline" className="border-golden/30 text-golden">
-                      +{user.interests.games.length - 5} more
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-center text-muted-foreground py-12">
-                  <Zap className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-medium mb-2">IGDB Integration Coming Soon</h3>
-                  <p>Game releases and recommendations will be available once IGDB API is integrated.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };

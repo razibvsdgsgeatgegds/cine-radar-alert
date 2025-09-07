@@ -1,104 +1,151 @@
-const TMDB_API_KEY = '8efe8647ea1db9fb32dcfdb0ea1dd302';
+import { STREAMING_PLATFORMS } from '@/constants';
+
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
+if (!TMDB_API_KEY) {
+  console.error("VITE_TMDB_API_KEY is not set in .env file. Please add it.");
+}
+
+const INDUSTRY_COUNTRY_MAP: Record<string, string> = {
+  'Hollywood': 'US',
+  'Bollywood': 'IN',
+  'Lollywood': 'PK',
+  'Tollywood': 'IN', // Telugu
+  'Kollywood': 'IN', // Tamil
+};
+
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+  'English': 'en',
+  'Hindi': 'hi',
+  'Urdu': 'ur',
+  'Telugu': 'te',
+  'Tamil': 'ta',
+  'Spanish': 'es',
+  'French': 'fr',
+};
+
+const getTodayDateString = () => {
+  return new Date().toISOString().split('T')[0];
+};
+
+const buildApiUrl = (basePath: string, params: Record<string, string> = {}) => {
+  const urlParams = new URLSearchParams({
+    api_key: TMDB_API_KEY,
+    ...params
+  });
+  return `${TMDB_BASE_URL}${basePath}?${urlParams.toString()}`;
+}
+
+const buildDiscoverParams = (
+  genreIds: number[],
+  region: string,
+  languages: string[],
+  industries: string[],
+  platforms: string[],
+  dateRange: string,
+  type: 'movie' | 'series'
+) => {
+  const params: Record<string, string> = {
+    sort_by: 'popularity.desc',
+    page: '1',
+  };
+
+  // Always include a watch_region. It's crucial for date and platform filtering.
+  // Default to 'US' if the user has no region set to ensure API calls are valid.
+  params.watch_region = region || 'US';
+
+  // --- Simplified and Corrected Date Filter Logic ---
+  const today = getTodayDateString();
+  const currentYear = new Date().getFullYear();
+  const dateKey = type === 'movie' ? 'primary_release_date' : 'first_air_date';
+  
+  switch (dateRange) {
+    case 'today':
+      params[`${dateKey}.gte`] = today;
+      params[`${dateKey}.lte`] = today;
+      break;
+    case String(currentYear):
+      // "This Year" means upcoming releases within the current year.
+      params[`${dateKey}.gte`] = today;
+      params[`${dateKey}.lte`] = `${currentYear}-12-31`;
+      break;
+    case String(currentYear + 1):
+      params[`${dateKey}.gte`] = `${currentYear + 1}-01-01`;
+      params[`${dateKey}.lte`] = `${currentYear + 1}-12-31`;
+      break;
+    case 'all':
+    default:
+      // "All Upcoming" means from today onwards.
+      params[`${dateKey}.gte`] = today;
+      break;
+  }
+
+  // --- Standard Filter Logic (using '|' for OR) ---
+
+  if (genreIds.length > 0) {
+    params.with_genres = genreIds.join('|');
+  }
+
+  const langCodes = languages.map(lang => LANGUAGE_CODE_MAP[lang]).filter(Boolean);
+  if (langCodes.length > 0) {
+    params.with_original_language = langCodes.join('|');
+  }
+
+  const countryCodes = [...new Set(industries.map(ind => INDUSTRY_COUNTRY_MAP[ind]).filter(Boolean))];
+  if (countryCodes.length > 0) {
+    params.with_origin_country = countryCodes.join('|');
+  }
+  
+  const platformIds = platforms.map(p => STREAMING_PLATFORMS[p]).filter(Boolean);
+  if (platformIds.length > 0) {
+    params.with_watch_providers = platformIds.join('|');
+  }
+
+  return params;
+};
+
 export const tmdbApi = {
-  // Get upcoming movies
-  getUpcomingMovies: async () => {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=1`
-    );
+  discoverMovies: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string) => {
+    const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'movie');
+    const url = buildApiUrl('/discover/movie', params);
+    const response = await fetch(url);
     return response.json();
   },
 
-  // Get popular movies
-  getPopularMovies: async () => {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=1`
-    );
+  discoverSeries: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string) => {
+    const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'series');
+    const url = buildApiUrl('/discover/tv', params);
+    const response = await fetch(url);
+    return response.json();
+  },
+  
+  getMovieVideos: async (movieId: number) => {
+    const url = buildApiUrl(`/movie/${movieId}/videos`);
+    const response = await fetch(url);
     return response.json();
   },
 
-  // Get trending movies this week
-  getTrendingMovies: async () => {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}`
-    );
+  getSeriesVideos: async (seriesId: number) => {
+    const url = buildApiUrl(`/tv/${seriesId}/videos`);
+    const response = await fetch(url);
     return response.json();
   },
 
-  // Get upcoming TV shows (airing today)
-  getUpcomingSeries: async () => {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/tv/airing_today?api_key=${TMDB_API_KEY}&language=en-US&page=1`
-    );
-    return response.json();
-  },
-
-  // Get popular TV shows
-  getPopularSeries: async () => {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&language=en-US&page=1`
-    );
-    return response.json();
-  },
-
-  // Get trending TV shows this week
-  getTrendingSeries: async () => {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/trending/tv/week?api_key=${TMDB_API_KEY}`
-    );
-    return response.json();
-  },
-
-  // Get movie genres
-  getMovieGenres: async () => {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=en-US`
-    );
-    return response.json();
-  },
-
-  // Get TV genres
-  getTVGenres: async () => {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/genre/tv/list?api_key=${TMDB_API_KEY}&language=en-US`
-    );
-    return response.json();
-  },
-
-  // Discover movies by genre
-  discoverMoviesByGenre: async (genreIds: number[]) => {
-    const genreString = genreIds.join(',');
-    const response = await fetch(
-      `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=en-US&with_genres=${genreString}&sort_by=release_date.desc&page=1`
-    );
-    return response.json();
-  },
-
-  // Discover TV shows by genre
-  discoverSeriesByGenre: async (genreIds: number[]) => {
-    const genreString = genreIds.join(',');
-    const response = await fetch(
-      `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&language=en-US&with_genres=${genreString}&sort_by=first_air_date.desc&page=1`
-    );
-    return response.json();
-  },
-
-  // Get full poster URL
   getPosterUrl: (posterPath: string | null) => {
     if (!posterPath) return '/placeholder.svg';
     return `${TMDB_IMAGE_BASE_URL}${posterPath}`;
   },
 
-  // Format release date
   formatDate: (dateString: string) => {
     if (!dateString) return 'TBA';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'UTC'
     });
   }
 };

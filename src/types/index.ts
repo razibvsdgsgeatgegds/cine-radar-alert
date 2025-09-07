@@ -1,13 +1,27 @@
 export interface UserPreferences {
   name: string;
   email: string;
-  location: string;
+  gender: 'male' | 'female' | 'other' | '';
+  location: {
+    country: string;
+  };
   age: number;
   interests: {
     movies: string[];
     series: string[];
     games: string[];
   };
+  notifications_enabled: boolean;
+  languages: string[];
+  industries: string[];
+  platforms: string[];
+  notification_list: { 
+    id: number; 
+    type: 'movie' | 'series'; 
+    name: string; 
+    date: string;
+    poster_path: string;
+  }[];
 }
 
 export interface Movie {
@@ -22,7 +36,7 @@ export interface Movie {
 
 export interface TVShow {
   id: number;
-  name: string;
+  name:string;
   overview: string;
   poster_path: string;
   first_air_date: string;
@@ -43,4 +57,17 @@ export interface Game {
   }>;
   rating?: number;
   genres?: number[];
+}
+
+export interface Video {
+  iso_639_1: string;
+  iso_3166_1: string;
+  name: string;
+  key: string;
+  site: string;
+  size: number;
+  type: string;
+  official: boolean;
+  published_at: string;
+  id: string;
 }
