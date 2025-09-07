@@ -77,8 +77,8 @@ const buildDiscoverParams = (
       break;
     case 'all':
     default:
-      // "All Upcoming" means from today onwards.
-      params[`${dateKey}.gte`] = today;
+      // Remove date filters to get all content (not just upcoming)
+      // For debugging purposes, let's see all content
       break;
   }
 
@@ -110,15 +110,23 @@ export const tmdbApi = {
   discoverMovies: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string) => {
     const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'movie');
     const url = buildApiUrl('/discover/movie', params);
+    console.log('TMDB Movie API URL:', url);
+    console.log('Movie Genre IDs:', genreIds);
     const response = await fetch(url);
-    return response.json();
+    const data = await response.json();
+    console.log('Movie API Response:', data);
+    return data;
   },
 
   discoverSeries: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string) => {
     const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'series');
     const url = buildApiUrl('/discover/tv', params);
+    console.log('TMDB Series API URL:', url);
+    console.log('Series Genre IDs:', genreIds);
     const response = await fetch(url);
-    return response.json();
+    const data = await response.json();
+    console.log('Series API Response:', data);
+    return data;
   },
   
   getMovieVideos: async (movieId: number) => {

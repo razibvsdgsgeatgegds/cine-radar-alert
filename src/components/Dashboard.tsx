@@ -24,7 +24,6 @@ export const Dashboard: React.FC = () => {
   const [filters, setFilters] = useState({
     languages: user?.languages || [],
     industries: user?.industries || [],
-    platforms: user?.platforms || [],
     dateRange: 'all',
   });
 
@@ -36,10 +35,15 @@ export const Dashboard: React.FC = () => {
       
       const movieGenreIds = getMovieGenreIds(user.interests.movies);
       const seriesGenreIds = getSeriesGenreIds(user.interests.series);
+      
+      console.log('User Movie Interests:', user.interests.movies);
+      console.log('User Series Interests:', user.interests.series);
+      console.log('User Location:', user.location.country);
+      console.log('Current Filters:', currentFilters);
 
       const [moviesData, seriesData] = await Promise.all([
-        tmdbApi.discoverMovies(movieGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.platforms, currentFilters.dateRange),
-        tmdbApi.discoverSeries(seriesGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.platforms, currentFilters.dateRange),
+        tmdbApi.discoverMovies(movieGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange),
+        tmdbApi.discoverSeries(seriesGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange),
       ]);
 
       setMovies(moviesData.results?.slice(0, 12) || []);

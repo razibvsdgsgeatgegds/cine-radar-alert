@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronDown, SlidersHorizontal, RefreshCw } from 'lucide-react';
-import { PLATFORM_LIST } from '@/constants';
+
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,10 +16,9 @@ interface DashboardFiltersProps {
   initialFilters: {
     languages: string[];
     industries: string[];
-    platforms: string[];
     dateRange: string;
   };
-  onApplyFilters: (filters: { languages: string[]; industries: string[]; platforms: string[]; dateRange: string; }) => void;
+  onApplyFilters: (filters: { languages: string[]; industries: string[]; dateRange: string; }) => void;
   loading: boolean;
 }
 
@@ -67,11 +66,11 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ initialFilte
   const [filters, setFilters] = useState(initialFilters);
   const currentYear = new Date().getFullYear();
 
-  const handleFilterChange = (type: 'languages' | 'industries' | 'platforms' | 'dateRange', value: string[] | string) => {
+  const handleFilterChange = (type: 'languages' | 'industries' | 'dateRange', value: string[] | string) => {
     setFilters(prev => ({ ...prev, [type]: value }));
   };
 
-  const totalFilters = filters.languages.length + filters.industries.length + filters.platforms.length;
+  const totalFilters = filters.languages.length + filters.industries.length;
 
   return (
     <Card className="bg-card/50 backdrop-blur-sm border-primary/20 mb-8">
@@ -93,12 +92,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ initialFilte
           options={INDUSTRIES}
           selected={filters.industries}
           onSelectedChange={(val) => handleFilterChange('industries', val)}
-        />
-        <MultiSelectFilter
-          title="Platforms"
-          options={PLATFORM_LIST}
-          selected={filters.platforms}
-          onSelectedChange={(val) => handleFilterChange('platforms', val)}
         />
         <Select
           value={filters.dateRange}
@@ -123,7 +116,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ initialFilte
          <CardFooter className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
             {filters.languages.map(f => <Badge key={f} variant="secondary">{f}</Badge>)}
             {filters.industries.map(f => <Badge key={f} variant="secondary">{f}</Badge>)}
-            {filters.platforms.map(f => <Badge key={f} variant="secondary">{f}</Badge>)}
+            
          </CardFooter>
       )}
     </Card>

@@ -13,6 +13,7 @@ import { Country } from 'country-state-city';
 import { showWelcomeNotification } from '@/lib/utils';
 import { tmdbApi } from '@/services/tmdb';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PreferenceEditor } from '@/components/PreferenceEditor';
 
 const Settings: React.FC = () => {
   const { user, setUser, clearUser } = useUser();
@@ -129,11 +130,38 @@ const Settings: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Content Preferences</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {[...formData.languages, ...formData.industries, ...formData.platforms].map(pref => (
-                      <Badge key={pref} variant="secondary">{pref}</Badge>
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <Label>Content Preferences</Label>
+                    <PreferenceEditor 
+                      user={formData} 
+                      onUpdate={(updatedUser) => setFormData(updatedUser)} 
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium mb-2">Movies:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {formData.interests.movies.map(genre => (
+                          <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium mb-2">TV Series:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {formData.interests.series.map(genre => (
+                          <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium mb-2">Filters:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {[...formData.languages, ...formData.industries].map(pref => (
+                          <Badge key={pref} variant="outline" className="text-xs">{pref}</Badge>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
