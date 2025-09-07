@@ -32,8 +32,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           platforms: [],
           notification_list: [],
           ...parsedUser,
-          location: { country: parsedUser.location?.country || '' },
         };
+        // Ensure location has proper structure
+        if (!defaultUser.location?.country) {
+          defaultUser.location = { country: '' };
+        }
         setUserState(defaultUser);
       } catch (error) {
         console.error('Failed to parse saved user data:', error);

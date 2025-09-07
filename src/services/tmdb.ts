@@ -1,6 +1,6 @@
 import { STREAMING_PLATFORMS } from '@/constants';
 
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const TMDB_API_KEY = '8efe8647ea1db9fb32dcfdb0ea1dd302';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
