@@ -77,8 +77,8 @@ const buildDiscoverParams = (
       break;
     case 'all':
     default:
-      // Remove date filters to get all content (not just upcoming)
-      // For debugging purposes, let's see all content
+      // "All Upcoming" means from today onwards - ALWAYS filter for upcoming only
+      params[`${dateKey}.gte`] = today;
       break;
   }
 
