@@ -32,6 +32,7 @@ export interface Movie {
   release_date: string;
   vote_average: number;
   genre_ids: number[];
+  watch_providers?: WatchProvider[];
 }
 
 export interface TVShow {
@@ -42,6 +43,14 @@ export interface TVShow {
   first_air_date: string;
   vote_average: number;
   genre_ids: number[];
+  watch_providers?: WatchProvider[];
+}
+
+export interface WatchProvider {
+  logo_path: string;
+  provider_id: number;
+  provider_name: string;
+  display_priority: number;
 }
 
 export interface Game {

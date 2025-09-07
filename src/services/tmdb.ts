@@ -135,6 +135,20 @@ export const tmdbApi = {
     return response.json();
   },
 
+  getMovieWatchProviders: async (movieId: number, region: string = 'US') => {
+    const url = buildApiUrl(`/movie/${movieId}/watch/providers`);
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.results?.[region] || null;
+  },
+
+  getSeriesWatchProviders: async (seriesId: number, region: string = 'US') => {
+    const url = buildApiUrl(`/tv/${seriesId}/watch/providers`);
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.results?.[region] || null;
+  },
+
   getSeriesVideos: async (seriesId: number) => {
     const url = buildApiUrl(`/tv/${seriesId}/videos`);
     const response = await fetch(url);
