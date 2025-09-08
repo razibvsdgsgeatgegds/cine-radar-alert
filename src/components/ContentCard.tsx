@@ -86,9 +86,9 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
             </div>
           </div>
 
-          {watchProviders.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Available on:</p>
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Streaming on:</p>
+            {watchProviders.length > 0 ? (
               <div className="flex gap-1 flex-wrap">
                 {watchProviders.map((provider) => (
                   <div
@@ -104,8 +104,10 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-muted-foreground italic">Info not yet available</p>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

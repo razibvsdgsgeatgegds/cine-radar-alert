@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/UserContext';
-import { Settings, Radar, Star, TrendingUp, Loader2 } from 'lucide-react';
+import { Settings, Radar, Star, TrendingUp, Loader2, Search } from 'lucide-react';
 import { ContentCard } from '@/components/ContentCard';
 import { ContentDetailsDialog } from '@/components/ContentDetailsDialog';
 import { Movie, TVShow } from '@/types';
@@ -26,25 +27,44 @@ export const Dashboard: React.FC = () => {
     industries: user?.industries || [],
     dateRange: 'all',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
-  const fetchContent = useCallback(async (currentFilters: typeof filters) => {
+  const fetchContent = useCallback(async (currentFilters: typeof filters, query: string = '') => {
     if (!user) return;
 
     try {
       setLoading(true);
+      setIsSearching(!!query);
       
-      const movieGenreIds = getMovieGenreIds(user.interests.movies);
-      const seriesGenreIds = getSeriesGenreIds(user.interests.series);
+      let moviesData, seriesData;
       
-      console.log('User Movie Interests:', user.interests.movies);
-      console.log('User Series Interests:', user.interests.series);
-      console.log('User Location:', user.location.country);
-      console.log('Current Filters:', currentFilters);
+      if (query.trim()) {
+        // Search mode - search all content but respect date filters
+        console.log('Searching for:', query, 'with filters:', currentFilters);
+        const [moviesResult, seriesResult] = await Promise.all([
+          tmdbApi.searchMovies(query, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.dateRange),
+          tmdbApi.searchSeries(query, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.dateRange),
+        ]);
+        moviesData = moviesResult;
+        seriesData = seriesResult;
+      } else {
+        // Default mode - show user's preferred content
+        const movieGenreIds = getMovieGenreIds(user.interests.movies);
+        const seriesGenreIds = getSeriesGenreIds(user.interests.series);
+        
+        console.log('User Movie Interests:', user.interests.movies);
+        console.log('User Series Interests:', user.interests.series);
+        console.log('User Location:', user.location.country);
+        console.log('Current Filters:', currentFilters);
 
-      const [moviesData, seriesData] = await Promise.all([
-        tmdbApi.discoverMovies(movieGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange),
-        tmdbApi.discoverSeries(seriesGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange),
-      ]);
+        const [moviesResult, seriesResult] = await Promise.all([
+          tmdbApi.discoverMovies(movieGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange),
+          tmdbApi.discoverSeries(seriesGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange),
+        ]);
+        moviesData = moviesResult;
+        seriesData = seriesResult;
+      }
 
       setMovies(moviesData.results?.slice(0, 12) || []);
       setSeries(seriesData.results?.slice(0, 12) || []);
@@ -53,6 +73,7 @@ export const Dashboard: React.FC = () => {
       toast.error("Failed to fetch content. Please try again later.");
     } finally {
       setLoading(false);
+      setIsSearching(false);
     }
   }, [user]);
 
@@ -86,7 +107,7 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      fetchContent(filters);
+      fetchContent(filters, searchQuery);
       checkAndSendReleaseNotifications();
 
       if ('Notification' in window && Notification.permission === 'default') {
@@ -97,7 +118,7 @@ export const Dashboard: React.FC = () => {
         }
       }
     }
-  }, [user, fetchContent, checkAndSendReleaseNotifications]);
+  }, [user, fetchContent, checkAndSendReleaseNotifications, filters, searchQuery]);
 
   const handleCardClick = (item: Movie | TVShow, type: 'movie' | 'series') => {
     setSelectedItem({ item, type });
@@ -110,7 +131,12 @@ export const Dashboard: React.FC = () => {
 
   const handleApplyFilters = (newFilters: typeof filters) => {
     setFilters(newFilters);
-    fetchContent(newFilters);
+    fetchContent(newFilters, searchQuery);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    fetchContent(filters, query);
   };
 
   const handleToggleNotification = (e: React.MouseEvent, item: Movie | TVShow, type: 'movie' | 'series') => {
@@ -183,9 +209,27 @@ export const Dashboard: React.FC = () => {
         <div className="container mx-auto px-4 py-8">
           <DashboardFilters initialFilters={filters} onApplyFilters={handleApplyFilters} loading={loading} />
 
+          <div className="mb-6">
+            <div className="relative max-w-md mx-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search movies & series..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10 bg-card/50 backdrop-blur-sm border-primary/20 focus:border-primary/40"
+              />
+            </div>
+            {isSearching && (
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                Searching all upcoming content...
+              </p>
+            )}
+          </div>
+
           <div className="space-y-8">
             <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
-              <CardHeader><CardTitle className="flex items-center text-neon-cyan"><Star className="w-5 h-5 mr-2" />Upcoming Movies</CardTitle><CardDescription>Based on your movie preferences</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="flex items-center text-neon-cyan"><Star className="w-5 h-5 mr-2" />Upcoming Movies</CardTitle><CardDescription>{searchQuery ? `Search results for "${searchQuery}"` : 'Based on your movie preferences'}</CardDescription></CardHeader>
               <CardContent>
                 {loading ? (
                   <div className="text-center text-muted-foreground py-8"><Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" /><p>Scanning for upcoming movies...</p></div>
@@ -209,7 +253,7 @@ export const Dashboard: React.FC = () => {
             </Card>
 
             <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
-              <CardHeader><CardTitle className="flex items-center text-neon-pink"><TrendingUp className="w-5 h-5 mr-2" />Upcoming Series</CardTitle><CardDescription>Based on your series preferences</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="flex items-center text-neon-pink"><TrendingUp className="w-5 h-5 mr-2" />Upcoming Series</CardTitle><CardDescription>{searchQuery ? `Search results for "${searchQuery}"` : 'Based on your series preferences'}</CardDescription></CardHeader>
               <CardContent>
                 {loading ? (
                   <div className="text-center text-muted-foreground py-8"><Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" /><p>Scanning for upcoming series...</p></div>

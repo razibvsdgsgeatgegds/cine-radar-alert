@@ -169,5 +169,113 @@ export const tmdbApi = {
       day: 'numeric',
       timeZone: 'UTC'
     });
+  },
+
+  searchMovies: async (query: string, region: string, languages: string[], industries: string[], dateRange: string) => {
+    const params: Record<string, string> = {
+      query: query,
+      page: '1',
+    };
+
+    // Add region for better results
+    if (region) {
+      params.region = region;
+    }
+
+    // Apply date filters for upcoming content only
+    const today = getTodayDateString();
+    const currentYear = new Date().getFullYear();
+    
+    switch (dateRange) {
+      case 'today':
+        params['primary_release_date.gte'] = today;
+        params['primary_release_date.lte'] = today;
+        break;
+      case String(currentYear):
+        params['primary_release_date.gte'] = today;
+        params['primary_release_date.lte'] = `${currentYear}-12-31`;
+        break;
+      case String(currentYear + 1):
+        params['primary_release_date.gte'] = `${currentYear + 1}-01-01`;
+        params['primary_release_date.lte'] = `${currentYear + 1}-12-31`;
+        break;
+      case 'all':
+      default:
+        params['primary_release_date.gte'] = today;
+        break;
+    }
+
+    // Apply language filters
+    const langCodes = languages.map(lang => LANGUAGE_CODE_MAP[lang]).filter(Boolean);
+    if (langCodes.length > 0) {
+      params.with_original_language = langCodes.join('|');
+    }
+
+    // Apply industry filters
+    const countryCodes = [...new Set(industries.map(ind => INDUSTRY_COUNTRY_MAP[ind]).filter(Boolean))];
+    if (countryCodes.length > 0) {
+      params.with_origin_country = countryCodes.join('|');
+    }
+
+    const url = buildApiUrl('/search/movie', params);
+    console.log('TMDB Movie Search URL:', url);
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log('Movie Search Response:', data);
+    return data;
+  },
+
+  searchSeries: async (query: string, region: string, languages: string[], industries: string[], dateRange: string) => {
+    const params: Record<string, string> = {
+      query: query,
+      page: '1',
+    };
+
+    // Add region for better results
+    if (region) {
+      params.region = region;
+    }
+
+    // Apply date filters for upcoming content only
+    const today = getTodayDateString();
+    const currentYear = new Date().getFullYear();
+    
+    switch (dateRange) {
+      case 'today':
+        params['first_air_date.gte'] = today;
+        params['first_air_date.lte'] = today;
+        break;
+      case String(currentYear):
+        params['first_air_date.gte'] = today;
+        params['first_air_date.lte'] = `${currentYear}-12-31`;
+        break;
+      case String(currentYear + 1):
+        params['first_air_date.gte'] = `${currentYear + 1}-01-01`;
+        params['first_air_date.lte'] = `${currentYear + 1}-12-31`;
+        break;
+      case 'all':
+      default:
+        params['first_air_date.gte'] = today;
+        break;
+    }
+
+    // Apply language filters
+    const langCodes = languages.map(lang => LANGUAGE_CODE_MAP[lang]).filter(Boolean);
+    if (langCodes.length > 0) {
+      params.with_original_language = langCodes.join('|');
+    }
+
+    // Apply industry filters
+    const countryCodes = [...new Set(industries.map(ind => INDUSTRY_COUNTRY_MAP[ind]).filter(Boolean))];
+    if (countryCodes.length > 0) {
+      params.with_origin_country = countryCodes.join('|');
+    }
+
+    const url = buildApiUrl('/search/tv', params);
+    console.log('TMDB Series Search URL:', url);
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log('Series Search Response:', data);
+    return data;
   }
 };

@@ -62,8 +62,20 @@ export const Onboarding: React.FC = () => {
     }));
   };
 
+  const handleSelectAll = (type: 'movieGenres' | 'seriesGenres' | 'gameGenres') => {
+    let allItems: string[] = [];
+    if (type === 'movieGenres') allItems = MOVIE_GENRES;
+    if (type === 'seriesGenres') allItems = SERIES_GENRES;
+    if (type === 'gameGenres') allItems = GAME_GENRES;
+    
+    setFormData(prev => ({
+      ...prev,
+      [type]: allItems
+    }));
+  };
+
   const handleNext = () => {
-    if (step < 6) {
+    if (step < 5) {
       setStep(step + 1);
     }
   };
@@ -77,7 +89,7 @@ export const Onboarding: React.FC = () => {
       age: parseInt(formData.age),
       languages: formData.languages,
       industries: formData.industries,
-      platforms: formData.platforms,
+      platforms: [],
       interests: {
         movies: formData.movieGenres,
         series: formData.seriesGenres,
@@ -101,12 +113,10 @@ export const Onboarding: React.FC = () => {
       case 2:
         return formData.languages.length > 0 && formData.industries.length > 0;
       case 3:
-        return formData.platforms.length > 0;
-      case 4:
         return formData.movieGenres.length > 0;
-      case 5:
+      case 4:
         return formData.seriesGenres.length > 0;
-      case 6:
+      case 5:
         return formData.gameGenres.length > 0;
       default:
         return false;
@@ -194,13 +204,18 @@ export const Onboarding: React.FC = () => {
         return (
           <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
             <CardHeader className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-neon-pink to-primary rounded-full flex items-center justify-center"><Tv className="w-8 h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-2xl bg-gradient-to-r from-neon-pink to-primary bg-clip-text text-transparent">Streaming Platforms</CardTitle>
-              <CardDescription>Where do you watch your content?</CardDescription>
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-neon-cyan to-electric-blue rounded-full flex items-center justify-center"><Star className="w-8 h-8 text-primary-foreground" /></div>
+              <CardTitle className="text-2xl bg-gradient-to-r from-neon-cyan to-electric-blue bg-clip-text text-transparent">Movie Preferences</CardTitle>
+              <CardDescription>Select your favorite movie genres</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 flex justify-center">
+                <Button variant="outline" onClick={() => handleSelectAll('movieGenres')} className="border-neon-cyan hover:border-neon-cyan hover:bg-neon-cyan/10">
+                  Select All
+                </Button>
+              </div>
               <div className="flex flex-wrap justify-center gap-2">
-                {PLATFORM_LIST.map(platform => (<Badge key={platform} variant={formData.platforms.includes(platform) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.platforms.includes(platform) ? 'bg-gradient-to-r from-neon-pink to-primary text-primary-foreground' : 'hover:border-neon-pink'}`} onClick={() => handleToggle(platform, 'platforms')}>{platform}</Badge>))}
+                {MOVIE_GENRES.map(genre => (<Badge key={genre} variant={formData.movieGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.movieGenres.includes(genre) ? 'bg-gradient-to-r from-neon-cyan to-electric-blue text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(genre, 'movieGenres')}>{genre}</Badge>))}
               </div>
             </CardContent>
           </Card>
@@ -209,13 +224,18 @@ export const Onboarding: React.FC = () => {
         return (
           <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
             <CardHeader className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-neon-cyan to-electric-blue rounded-full flex items-center justify-center"><Star className="w-8 h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-2xl bg-gradient-to-r from-neon-cyan to-electric-blue bg-clip-text text-transparent">Movie Preferences</CardTitle>
-              <CardDescription>Select your favorite movie genres</CardDescription>
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-neon-pink to-primary rounded-full flex items-center justify-center"><Sparkles className="w-8 h-8 text-primary-foreground" /></div>
+              <CardTitle className="text-2xl bg-gradient-to-r from-neon-pink to-primary bg-clip-text text-transparent">Series Preferences</CardTitle>
+              <CardDescription>Select your favorite TV series genres</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 flex justify-center">
+                <Button variant="outline" onClick={() => handleSelectAll('seriesGenres')} className="border-neon-pink hover:border-neon-pink hover:bg-neon-pink/10">
+                  Select All
+                </Button>
+              </div>
               <div className="flex flex-wrap justify-center gap-2">
-                {MOVIE_GENRES.map(genre => (<Badge key={genre} variant={formData.movieGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.movieGenres.includes(genre) ? 'bg-gradient-to-r from-neon-cyan to-electric-blue text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(genre, 'movieGenres')}>{genre}</Badge>))}
+                {SERIES_GENRES.map(genre => (<Badge key={genre} variant={formData.seriesGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.seriesGenres.includes(genre) ? 'bg-gradient-to-r from-neon-pink to-primary text-primary-foreground' : 'hover:border-neon-pink'}`} onClick={() => handleToggle(genre, 'seriesGenres')}>{genre}</Badge>))}
               </div>
             </CardContent>
           </Card>
@@ -224,26 +244,16 @@ export const Onboarding: React.FC = () => {
         return (
           <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
             <CardHeader className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-neon-pink to-primary rounded-full flex items-center justify-center"><Sparkles className="w-8 h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-2xl bg-gradient-to-r from-neon-pink to-primary bg-clip-text text-transparent">Series Preferences</CardTitle>
-              <CardDescription>Select your favorite TV series genres</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap justify-center gap-2">
-                {SERIES_GENRES.map(genre => (<Badge key={genre} variant={formData.seriesGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.seriesGenres.includes(genre) ? 'bg-gradient-to-r from-neon-pink to-primary text-primary-foreground' : 'hover:border-neon-pink'}`} onClick={() => handleToggle(genre, 'seriesGenres')}>{genre}</Badge>))}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      case 6:
-        return (
-          <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-4">
               <div className="mx-auto w-16 h-16 bg-gradient-to-br from-golden to-accent rounded-full flex items-center justify-center"><Calendar className="w-8 h-8 text-primary-foreground" /></div>
               <CardTitle className="text-2xl bg-gradient-to-r from-golden to-accent bg-clip-text text-transparent">Gaming Preferences</CardTitle>
               <CardDescription>Select your favorite game genres</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 flex justify-center">
+                <Button variant="outline" onClick={() => handleSelectAll('gameGenres')} className="border-golden hover:border-golden hover:bg-golden/10">
+                  Select All
+                </Button>
+              </div>
               <div className="flex flex-wrap justify-center gap-2">
                 {GAME_GENRES.map(genre => (<Badge key={genre} variant={formData.gameGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.gameGenres.includes(genre) ? 'bg-gradient-to-r from-golden to-accent text-primary-foreground' : 'hover:border-golden'}`} onClick={() => handleToggle(genre, 'gameGenres')}>{genre}</Badge>))}
               </div>
@@ -261,14 +271,14 @@ export const Onboarding: React.FC = () => {
       <div className="relative z-10 w-full max-w-4xl">
         <div className="mb-8 flex justify-center">
           <div className="flex space-x-2">
-            {[1, 2, 3, 4, 5, 6].map(i => (<div key={i} className={`w-3 h-3 rounded-full transition-all ${i <= step ? 'bg-primary' : 'bg-muted'}`} />))}
+            {[1, 2, 3, 4, 5].map(i => (<div key={i} className={`w-3 h-3 rounded-full transition-all ${i <= step ? 'bg-primary' : 'bg-muted'}`} />))}
           </div>
         </div>
         {renderStep()}
         <div className="mt-8 flex justify-center space-x-4">
           {step > 1 && (<Button variant="outline" onClick={() => setStep(step - 1)} className="border-primary/20 hover:border-primary">Back</Button>)}
-          <Button onClick={step === 6 ? handleComplete : handleNext} disabled={!canProceed()} className="bg-gradient-to-r from-primary to-neon-pink hover:shadow-lg hover:shadow-primary/25 transition-all">
-            {step === 6 ? (<><Radar className="w-4 h-4 mr-2" />Complete Setup</>) : ('Next')}
+          <Button onClick={step === 5 ? handleComplete : handleNext} disabled={!canProceed()} className="bg-gradient-to-r from-primary to-neon-pink hover:shadow-lg hover:shadow-primary/25 transition-all">
+            {step === 5 ? (<><Radar className="w-4 h-4 mr-2" />Complete Setup</>) : ('Next')}
           </Button>
         </div>
       </div>
