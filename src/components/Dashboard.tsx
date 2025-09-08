@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/UserContext';
-import { Settings, Radar, Star, TrendingUp, Loader2, Search } from 'lucide-react';
+import { Settings, Radar, Star, TrendingUp, Loader2, Search, RefreshCw, AlertTriangle } from 'lucide-react';
 import { ContentCard } from '@/components/ContentCard';
 import { ContentDetailsDialog } from '@/components/ContentDetailsDialog';
 import { Movie, TVShow } from '@/types';
@@ -22,26 +22,62 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<{ item: Movie | TVShow; type: 'movie' | 'series' } | null>(null);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
-  const [filters, setFilters] = useState({
-    languages: user?.languages || [],
-    industries: user?.industries || [],
-    dateRange: 'all',
+  const [filters, setFilters] = useState(() => {
+    // Load saved filters from localStorage
+    const savedFilters = localStorage.getItem('radar-user-filters');
+    if (savedFilters) {
+      try {
+        return JSON.parse(savedFilters);
+      } catch (error) {
+        console.error('Failed to parse saved filters:', error);
+      }
+    }
+    return {
+      languages: user?.languages || [],
+      industries: user?.industries || [],
+      dateRange: 'all',
+    };
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [oldContentAlert, setOldContentAlert] = useState<string | null>(null);
 
-  const fetchContent = useCallback(async (currentFilters: typeof filters, query: string = '') => {
+  const fetchContent = useCallback(async (currentFilters: typeof filters, query: string = '', isResync: boolean = false) => {
     if (!user) return;
 
     try {
       setLoading(true);
       setIsSearching(!!query);
+      setOldContentAlert(null);
       
       let moviesData, seriesData;
       
       if (query.trim()) {
-        // Search mode - search all content but respect date filters
+        // Search mode - search all content but only show upcoming
         console.log('Searching for:', query, 'with filters:', currentFilters);
+        
+        // First, search all content to check for exact matches with old content
+        const [allMoviesResult, allSeriesResult] = await Promise.all([
+          tmdbApi.searchMoviesAll(query, user.location.country, currentFilters.languages, currentFilters.industries),
+          tmdbApi.searchSeriesAll(query, user.location.country, currentFilters.languages, currentFilters.industries),
+        ]);
+        
+        // Check if there are any old/released items with exact title match
+        const today = new Date().toISOString().split('T')[0];
+        const exactMovieMatch = allMoviesResult.results?.find((movie: Movie) => 
+          movie.title.toLowerCase() === query.toLowerCase() && movie.release_date < today
+        );
+        const exactSeriesMatch = allSeriesResult.results?.find((series: TVShow) => 
+          series.name.toLowerCase() === query.toLowerCase() && series.first_air_date < today
+        );
+        
+        if (exactMovieMatch) {
+          setOldContentAlert(`"${exactMovieMatch.title}" was released on ${tmdbApi.formatDate(exactMovieMatch.release_date)}`);
+        } else if (exactSeriesMatch) {
+          setOldContentAlert(`"${exactSeriesMatch.name}" was released on ${tmdbApi.formatDate(exactSeriesMatch.first_air_date)}`);
+        }
+        
+        // Now get only upcoming content
         const [moviesResult, seriesResult] = await Promise.all([
           tmdbApi.searchMovies(query, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.dateRange),
           tmdbApi.searchSeries(query, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.dateRange),
@@ -68,6 +104,10 @@ export const Dashboard: React.FC = () => {
 
       setMovies(moviesData.results?.slice(0, 12) || []);
       setSeries(seriesData.results?.slice(0, 12) || []);
+      
+      if (isResync) {
+        toast.success("Content refreshed successfully!");
+      }
     } catch (error) {
       console.error('Error fetching content:', error);
       toast.error("Failed to fetch content. Please try again later.");
@@ -131,7 +171,13 @@ export const Dashboard: React.FC = () => {
 
   const handleApplyFilters = (newFilters: typeof filters) => {
     setFilters(newFilters);
+    // Save filters to localStorage
+    localStorage.setItem('radar-user-filters', JSON.stringify(newFilters));
     fetchContent(newFilters, searchQuery);
+  };
+
+  const handleResync = () => {
+    fetchContent(filters, searchQuery, true);
   };
 
   const handleSearch = (query: string) => {
@@ -198,6 +244,10 @@ export const Dashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={handleResync} disabled={loading}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Resync
+              </Button>
               <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
@@ -224,6 +274,14 @@ export const Dashboard: React.FC = () => {
               <p className="text-center text-sm text-muted-foreground mt-2">
                 Searching all upcoming content...
               </p>
+            )}
+            {oldContentAlert && (
+              <div className="max-w-md mx-auto mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-600">
+                  <AlertTriangle className="w-4 h-4" />
+                  <p className="text-sm font-medium">{oldContentAlert}</p>
+                </div>
+              </div>
             )}
           </div>
 

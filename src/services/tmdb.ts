@@ -277,5 +277,61 @@ export const tmdbApi = {
     const data = await response.json();
     console.log('Series Search Response:', data);
     return data;
+  },
+
+  // Search all movies (including past ones) for exact match detection
+  searchMoviesAll: async (query: string, region: string, languages: string[], industries: string[]) => {
+    const params: Record<string, string> = {
+      query: query,
+      page: '1',
+    };
+
+    if (region) {
+      params.region = region;
+    }
+
+    // Apply language filters
+    const langCodes = languages.map(lang => LANGUAGE_CODE_MAP[lang]).filter(Boolean);
+    if (langCodes.length > 0) {
+      params.with_original_language = langCodes.join('|');
+    }
+
+    // Apply industry filters
+    const countryCodes = [...new Set(industries.map(ind => INDUSTRY_COUNTRY_MAP[ind]).filter(Boolean))];
+    if (countryCodes.length > 0) {
+      params.with_origin_country = countryCodes.join('|');
+    }
+
+    const url = buildApiUrl('/search/movie', params);
+    const response = await fetch(url);
+    return response.json();
+  },
+
+  // Search all series (including past ones) for exact match detection
+  searchSeriesAll: async (query: string, region: string, languages: string[], industries: string[]) => {
+    const params: Record<string, string> = {
+      query: query,
+      page: '1',
+    };
+
+    if (region) {
+      params.region = region;
+    }
+
+    // Apply language filters
+    const langCodes = languages.map(lang => LANGUAGE_CODE_MAP[lang]).filter(Boolean);
+    if (langCodes.length > 0) {
+      params.with_original_language = langCodes.join('|');
+    }
+
+    // Apply industry filters
+    const countryCodes = [...new Set(industries.map(ind => INDUSTRY_COUNTRY_MAP[ind]).filter(Boolean))];
+    if (countryCodes.length > 0) {
+      params.with_origin_country = countryCodes.join('|');
+    }
+
+    const url = buildApiUrl('/search/tv', params);
+    const response = await fetch(url);
+    return response.json();
   }
 };

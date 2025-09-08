@@ -19,6 +19,14 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
   const { user } = useUser();
   const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([]);
 
+  const title = type === 'movie' ? (item as Movie).title : (item as TVShow).name;
+  const releaseDate = type === 'movie' ? (item as Movie).release_date : (item as TVShow).first_air_date;
+  const posterUrl = tmdbApi.getPosterUrl(item.poster_path);
+  
+  // Check if content is upcoming (today or future)
+  const today = new Date().toISOString().split('T')[0];
+  const isUpcoming = releaseDate >= today;
+
   useEffect(() => {
     const fetchWatchProviders = async () => {
       if (!user?.location.country) return;
@@ -39,9 +47,6 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
     fetchWatchProviders();
   }, [item.id, type, user?.location.country]);
 
-  const title = type === 'movie' ? (item as Movie).title : (item as TVShow).name;
-  const releaseDate = type === 'movie' ? (item as Movie).release_date : (item as TVShow).first_air_date;
-  const posterUrl = tmdbApi.getPosterUrl(item.poster_path);
 
   return (
     <Card 
@@ -61,20 +66,22 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
         <div className="p-4 space-y-3">
           <div className="flex items-start justify-between">
             <h3 className="font-semibold text-sm line-clamp-2 flex-1">{title}</h3>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0 ml-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleNotification(e);
-              }}
-            >
-              {isNotificationEnabled ? 
-                <Check className="h-4 w-4 text-green-500" /> : 
-                <Plus className="h-4 w-4" />
-              }
-            </Button>
+            {isUpcoming && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 ml-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleNotification(e);
+                }}
+              >
+                {isNotificationEnabled ? 
+                  <Check className="h-4 w-4 text-green-500" /> : 
+                  <Plus className="h-4 w-4" />
+                }
+              </Button>
+            )}
           </div>
           
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
