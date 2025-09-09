@@ -36,9 +36,10 @@ const INDUSTRIES = ['Hollywood', 'Bollywood', 'Tollywood', 'Lollywood', 'Kollywo
 
 export const Onboarding: React.FC = () => {
   const [step, setStep] = useState(1);
+  const { authUser, setUser } = useUser();
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    name: authUser?.name || '',
+    email: authUser?.email || '',
     gender: '' as 'male' | 'female' | 'other' | '',
     location: { country: '' },
     age: '',
@@ -49,7 +50,6 @@ export const Onboarding: React.FC = () => {
     seriesGenres: [] as string[],
     gameGenres: [] as string[]
   });
-  const { setUser } = useUser();
   
   const countries = useMemo(() => Country.getAllCountries(), []);
 

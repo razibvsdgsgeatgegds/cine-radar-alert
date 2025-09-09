@@ -1,20 +1,32 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserPreferences } from '@/types';
 
+interface AuthUser {
+  name: string;
+  email: string;
+  isAuthenticated: boolean;
+}
+
 interface UserContextType {
   user: UserPreferences | null;
+  authUser: AuthUser | null;
   setUser: (user: UserPreferences) => void;
+  setAuthUser: (user: AuthUser) => void;
   clearUser: () => void;
   isOnboarded: boolean;
+  isAuthenticated: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<UserPreferences | null>(null);
+  const [authUser, setAuthUserState] = useState<AuthUser | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('radar-user');
+    const savedAuthUser = localStorage.getItem('radarapp-auth');
+    
     if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
@@ -43,6 +55,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('radar-user');
       }
     }
+    
+    if (savedAuthUser) {
+      try {
+        setAuthUserState(JSON.parse(savedAuthUser));
+      } catch (error) {
+        console.error('Error parsing saved auth data:', error);
+        localStorage.removeItem('radarapp-auth');
+      }
+    }
   }, []);
 
   const setUser = (userData: UserPreferences) => {
@@ -50,17 +71,27 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('radar-user', JSON.stringify(userData));
   };
 
+  const setAuthUser = (authData: AuthUser) => {
+    setAuthUserState(authData);
+    localStorage.setItem('radarapp-auth', JSON.stringify(authData));
+  };
+
   const clearUser = () => {
     setUserState(null);
+    setAuthUserState(null);
     localStorage.removeItem('radar-user');
+    localStorage.removeItem('radarapp-auth');
   };
 
   return (
     <UserContext.Provider value={{
       user,
+      authUser,
       setUser,
+      setAuthUser,
       clearUser,
-      isOnboarded: !!user
+      isOnboarded: !!user,
+      isAuthenticated: !!authUser?.isAuthenticated
     }}>
       {children}
     </UserContext.Provider>
