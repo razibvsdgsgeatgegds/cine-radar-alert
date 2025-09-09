@@ -107,8 +107,9 @@ const buildDiscoverParams = (
 };
 
 export const tmdbApi = {
-  discoverMovies: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string) => {
+  discoverMovies: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string, page: number = 1) => {
     const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'movie');
+    params.page = page.toString();
     const url = buildApiUrl('/discover/movie', params);
     console.log('TMDB Movie API URL:', url);
     console.log('Movie Genre IDs:', genreIds);
@@ -118,8 +119,9 @@ export const tmdbApi = {
     return data;
   },
 
-  discoverSeries: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string) => {
+  discoverSeries: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string, page: number = 1) => {
     const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'series');
+    params.page = page.toString();
     const url = buildApiUrl('/discover/tv', params);
     console.log('TMDB Series API URL:', url);
     console.log('Series Genre IDs:', genreIds);

@@ -41,8 +41,9 @@ export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [oldContentAlert, setOldContentAlert] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchContent = useCallback(async (currentFilters: typeof filters, query: string = '', isResync: boolean = false) => {
+  const fetchContent = useCallback(async (currentFilters: typeof filters, query: string = '', isResync: boolean = false, page: number = 1) => {
     if (!user) return;
 
     try {
@@ -85,7 +86,7 @@ export const Dashboard: React.FC = () => {
         moviesData = moviesResult;
         seriesData = seriesResult;
       } else {
-        // Default mode - show user's preferred content
+        // Default mode - show user's preferred content with pagination for variety
         const movieGenreIds = getMovieGenreIds(user.interests.movies);
         const seriesGenreIds = getSeriesGenreIds(user.interests.series);
         
@@ -93,10 +94,11 @@ export const Dashboard: React.FC = () => {
         console.log('User Series Interests:', user.interests.series);
         console.log('User Location:', user.location.country);
         console.log('Current Filters:', currentFilters);
+        console.log('Fetching page:', page);
 
         const [moviesResult, seriesResult] = await Promise.all([
-          tmdbApi.discoverMovies(movieGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange),
-          tmdbApi.discoverSeries(seriesGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange),
+          tmdbApi.discoverMovies(movieGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange, page),
+          tmdbApi.discoverSeries(seriesGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange, page),
         ]);
         moviesData = moviesResult;
         seriesData = seriesResult;
@@ -106,7 +108,7 @@ export const Dashboard: React.FC = () => {
       setSeries(seriesData.results?.slice(0, 12) || []);
       
       if (isResync) {
-        toast.success("Content refreshed successfully!");
+        toast.success("Content refreshed with new upcoming releases!");
       }
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -147,7 +149,7 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      fetchContent(filters, searchQuery);
+      fetchContent(filters, searchQuery, false, 1);
       checkAndSendReleaseNotifications();
 
       if ('Notification' in window && Notification.permission === 'default') {
@@ -158,7 +160,7 @@ export const Dashboard: React.FC = () => {
         }
       }
     }
-  }, [user, fetchContent, checkAndSendReleaseNotifications, filters, searchQuery]);
+  }, [user, checkAndSendReleaseNotifications, filters, searchQuery]);
 
   const handleCardClick = (item: Movie | TVShow, type: 'movie' | 'series') => {
     setSelectedItem({ item, type });
@@ -171,18 +173,23 @@ export const Dashboard: React.FC = () => {
 
   const handleApplyFilters = (newFilters: typeof filters) => {
     setFilters(newFilters);
+    setCurrentPage(1); // Reset page when filters change
     // Save filters to localStorage
     localStorage.setItem('radar-user-filters', JSON.stringify(newFilters));
-    fetchContent(newFilters, searchQuery);
+    fetchContent(newFilters, searchQuery, false, 1);
   };
 
   const handleResync = () => {
-    fetchContent(filters, searchQuery, true);
+    // Increment page to get different content each time
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchContent(filters, searchQuery, true, nextPage);
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    fetchContent(filters, query);
+    setCurrentPage(1); // Reset page when searching
+    fetchContent(filters, query, false, 1);
   };
 
   const handleToggleNotification = (e: React.MouseEvent, item: Movie | TVShow, type: 'movie' | 'series') => {
