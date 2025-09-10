@@ -71,7 +71,7 @@ export const FloatingFeedbackButton: React.FC = () => {
       {/* Floating Button */}
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-primary hover:shadow-glow transition-all duration-300 transform hover:scale-110 shadow-xl"
+        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-gradient-primary hover:shadow-glow transition-all duration-300 transform hover:scale-110 shadow-xl pointer-events-auto"
         size="icon"
       >
         <MessageCircle className="h-6 w-6" />
