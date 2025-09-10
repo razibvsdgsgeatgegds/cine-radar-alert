@@ -81,6 +81,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthUserState(null);
     localStorage.removeItem('radar-user');
     localStorage.removeItem('radarapp-auth');
+    // Clear notification prompt session storage to avoid re-showing onboarding
+    sessionStorage.removeItem('notificationPromptDismissed');
   };
 
   return (

@@ -14,6 +14,7 @@ import { showWelcomeNotification } from '@/lib/utils';
 import { tmdbApi } from '@/services/tmdb';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PreferenceEditor } from '@/components/PreferenceEditor';
+import { supabase } from '@/integrations/supabase/client';
 
 const Settings: React.FC = () => {
   const { user, setUser, clearUser } = useUser();
@@ -67,7 +68,8 @@ const Settings: React.FC = () => {
     }
   };
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     clearUser();
     navigate('/');
     toast.info("You have been logged out.");

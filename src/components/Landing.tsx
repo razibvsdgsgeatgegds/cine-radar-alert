@@ -37,7 +37,9 @@ const Landing = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if (event === 'SIGNED_OUT') {
+        setAuthUser(null);
+      } else if (session) {
         setAuthUser({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
@@ -220,10 +222,6 @@ const Landing = () => {
                   <Zap className="h-5 w-5 mr-2" />
                   Get Started Free
                 </Button>
-                <Button variant="outline" size="lg" className="border-primary/30 hover:bg-primary/10 backdrop-blur-sm">
-                  <Heart className="h-5 w-5 mr-2" />
-                  Learn More
-                </Button>
               </div>
             </div>
             
@@ -321,11 +319,11 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Auth & Feedback Section */}
+      {/* Auth Section */}
       <section className="py-20 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-neon-purple/5 to-electric-blue/5"></div>
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+          <div className="max-w-md mx-auto">
             {/* Authentication */}
             <Card className="shadow-glow bg-card/80 backdrop-blur-sm border-primary/20">
               <CardHeader className="text-center">
@@ -437,54 +435,6 @@ const Landing = () => {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Feedback */}
-            <Card className="shadow-glow bg-card/80 backdrop-blur-sm border-neon-cyan/20">
-              <CardHeader className="text-center">
-                <CardTitle className="text-3xl bg-gradient-to-r from-neon-cyan to-neon-pink bg-clip-text text-transparent">
-                  Share Your Vision
-                </CardTitle>
-                <CardDescription className="text-lg">
-                  Help us shape the future of entertainment tracking
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleFeedback} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="feedback" className="text-sm font-medium">Your Ideas & Feedback</Label>
-                    <Textarea
-                      id="feedback"
-                      placeholder="Share your thoughts, suggest features, report bugs, or tell us about your dream entertainment tracker..."
-                      className="min-h-[140px] bg-input/50 border-neon-cyan/20 focus:border-neon-cyan/50 resize-none"
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-neon-cyan to-electric-blue hover:shadow-glow transition-all duration-300" 
-                    size="lg"
-                  >
-                    <Heart className="h-5 w-5 mr-2" />
-                    Send Feedback
-                  </Button>
-                </form>
-                
-                <div className="mt-6 p-6 bg-gradient-to-br from-neon-cyan/10 to-electric-blue/10 rounded-xl border border-neon-cyan/20">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="h-5 w-5 text-neon-cyan flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-neon-cyan mb-1">Pro Tip</p>
-                      <p className="text-sm text-muted-foreground">
-                        The more specific your feedback, the better we can build features you'll love!
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>
@@ -501,7 +451,7 @@ const Landing = () => {
             Built with <Heart className="inline h-4 w-4 text-neon-pink mx-1" /> for entertainment enthusiasts worldwide
           </p>
           <p className="text-sm text-muted-foreground/70">
-            © 2024 RadarApp. Your entertainment radar is always on.
+            © 2025 RadarApp. Your entertainment radar is always on.
           </p>
         </div>
       </footer>
