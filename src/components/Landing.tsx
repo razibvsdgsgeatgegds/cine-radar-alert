@@ -139,6 +139,16 @@ const Landing = () => {
     setFeedback('');
   };
 
+  const scrollToSignup = () => {
+    const authSection = document.querySelector('#auth-section');
+    if (authSection) {
+      authSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   const features = [
     {
       icon: <Bell className="h-8 w-8 text-neon-purple drop-shadow-lg" />,
@@ -178,16 +188,16 @@ const Landing = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/10 via-transparent to-electric-blue/10" />
-        <div className="container mx-auto px-4 py-20 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
+        <div className="container mx-auto px-4 py-12 sm:py-16 lg:py-20 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div className="space-y-6 lg:space-y-8 order-2 lg:order-1">
               <div className="space-y-6">
                 <Badge variant="secondary" 
                        className="w-fit bg-gradient-primary text-primary-foreground border-0 shadow-glow">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Never Miss Another Release
                 </Badge>
-                <h1 className="text-5xl lg:text-7xl font-bold">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold">
                   <span className="bg-gradient-to-r from-neon-purple via-neon-pink to-electric-blue bg-clip-text text-transparent">
                     Radar
                   </span>
@@ -195,42 +205,54 @@ const Landing = () => {
                     App
                   </span>
                 </h1>
-                <p className="text-xl text-muted-foreground leading-relaxed">
+                <p className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed">
                   Your personal entertainment command center. Track upcoming movies, TV series, and games with 
                   <span className="text-neon-cyan font-semibold"> AI-powered recommendations</span> and 
                   <span className="text-neon-pink font-semibold"> smart notifications</span>.
                 </p>
               </div>
               
-              <div className="flex flex-wrap gap-6">
-                <div className="flex items-center gap-3 bg-card/50 backdrop-blur-sm rounded-full px-4 py-2 border border-primary/20">
-                  <Film className="h-5 w-5 text-neon-purple" />
-                  <span className="text-sm font-medium">Movies</span>
+              <div className="flex flex-wrap gap-3 sm:gap-4 lg:gap-6">
+                <div className="flex items-center gap-2 sm:gap-3 bg-card/50 backdrop-blur-sm rounded-full px-3 sm:px-4 py-2 border border-primary/30">
+                  <Film className="h-4 sm:h-5 w-4 sm:w-5 text-neon-purple" />
+                  <span className="text-xs sm:text-sm font-medium">Movies</span>
                 </div>
-                <div className="flex items-center gap-3 bg-card/50 backdrop-blur-sm rounded-full px-4 py-2 border border-electric-blue/20">
-                  <Tv className="h-5 w-5 text-electric-blue" />
-                  <span className="text-sm font-medium">TV Series</span>
+                <div className="flex items-center gap-2 sm:gap-3 bg-card/50 backdrop-blur-sm rounded-full px-3 sm:px-4 py-2 border border-electric-blue/30">
+                  <Tv className="h-4 sm:h-5 w-4 sm:w-5 text-electric-blue" />
+                  <span className="text-xs sm:text-sm font-medium">TV Series</span>
                 </div>
-                <div className="flex items-center gap-3 bg-card/50 backdrop-blur-sm rounded-full px-4 py-2 border border-golden/20">
-                  <Gamepad2 className="h-5 w-5 text-golden" />
-                  <span className="text-sm font-medium">Games (Soon)</span>
+                <div className="flex items-center gap-2 sm:gap-3 bg-card/50 backdrop-blur-sm rounded-full px-3 sm:px-4 py-2 border border-golden/30">
+                  <Gamepad2 className="h-4 sm:h-5 w-4 sm:w-5 text-golden" />
+                  <span className="text-xs sm:text-sm font-medium">Games (Soon)</span>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <Button size="lg" className="bg-gradient-primary hover:shadow-glow transition-all duration-300 transform hover:scale-105">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  size="lg" 
+                  onClick={scrollToSignup}
+                  className="bg-gradient-primary hover:shadow-glow transition-all duration-300 transform hover:scale-105"
+                >
                   <Zap className="h-5 w-5 mr-2" />
                   Get Started Free
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={scrollToSignup}
+                  className="border-primary/50 hover:border-primary hover:bg-primary/10 transition-all duration-300"
+                >
+                  Start Your Journey
                 </Button>
               </div>
             </div>
             
-            <div className="relative group">
+            <div className="relative group order-1 lg:order-2">
               <div className="absolute -inset-1 bg-gradient-primary rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
               <img 
                 src={heroRadar} 
                 alt="RadarApp Dashboard Preview" 
-                className="relative rounded-lg shadow-card border border-primary/20"
+                className="relative rounded-lg shadow-card border border-primary/20 w-full h-auto"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent rounded-lg" />
             </div>
@@ -241,33 +263,33 @@ const Landing = () => {
       {/* Features Section */}
       <section className="py-20 relative">
         <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+          <div className="text-center mb-12 lg:mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 lg:mb-6">
               <span className="bg-gradient-to-r from-neon-purple to-electric-blue bg-clip-text text-transparent">
                 Why Choose RadarApp?
               </span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
               Discover the cutting-edge features that make tracking your entertainment 
               <span className="text-neon-cyan"> effortless</span> and 
               <span className="text-neon-pink"> exciting</span>
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {features.map((feature, index) => (
               <Card key={index} 
-                    className="text-center group hover:shadow-glow transition-all duration-500 bg-card/80 backdrop-blur-sm border-muted hover:border-primary/50 transform hover:scale-105">
-                <CardHeader>
-                  <div className={`mx-auto mb-4 p-4 bg-gradient-to-br ${feature.gradient} rounded-2xl w-fit shadow-neon group-hover:shadow-glow transition-all duration-300`}>
+                    className="text-center group hover:shadow-glow transition-all duration-500 bg-card/80 backdrop-blur-sm border-2 border-primary/20 hover:border-primary/60 transform hover:scale-105">
+                <CardHeader className="pb-4">
+                  <div className={`mx-auto mb-4 p-4 bg-gradient-to-br ${feature.gradient} rounded-2xl w-fit shadow-neon group-hover:shadow-glow transition-all duration-300 border-2 border-primary/30`}>
                     {feature.icon}
                   </div>
-                  <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                  <CardTitle className="text-lg sm:text-xl group-hover:text-primary transition-colors">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base leading-relaxed">
+                <CardContent className="pt-0">
+                  <CardDescription className="text-sm sm:text-base leading-relaxed">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
@@ -320,7 +342,7 @@ const Landing = () => {
       </section>
 
       {/* Auth Section */}
-      <section className="py-20 relative">
+      <section id="auth-section" className="py-20 relative scroll-mt-20">
         <div className="absolute inset-0 bg-gradient-to-r from-neon-purple/5 to-electric-blue/5"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-md mx-auto">
