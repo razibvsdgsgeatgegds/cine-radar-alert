@@ -5,12 +5,5 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const showWelcomeNotification = () => {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('🎬 You are ready to start!', {
-      body: 'Start adding movies & series to your list to get notified about new releases.',
-      icon: '/favicon.ico',
-      tag: 'welcome-notification',
-    });
-  }
-};
+// Re-export from notifications service for backward compatibility
+export { showWelcomeNotification } from '@/utils/notifications';

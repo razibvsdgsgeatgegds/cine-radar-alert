@@ -12,7 +12,7 @@ import {
 import { toast } from '@/components/ui/sonner';
 import { useUser } from '@/contexts/UserContext';
 import { BellRing } from 'lucide-react';
-import { showWelcomeNotification } from '@/lib/utils';
+import { NotificationService } from '@/utils/notifications';
 
 interface NotificationPromptProps {
   open: boolean;
@@ -24,21 +24,19 @@ export const NotificationPrompt: React.FC<NotificationPromptProps> = ({ open, on
   const { user, setUser } = useUser();
 
   const handleEnableNotifications = async () => {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        if (user) {
-          setUser({ ...user, notifications_enabled: true });
-        }
-        toast.success('Notifications enabled!', {
-          description: 'You\'ll now get alerts for new releases.',
-        });
-        showWelcomeNotification();
-      } else {
-        toast.error('Permission denied', {
-          description: 'You can enable notifications later in settings.',
-        });
+    const success = await NotificationService.requestPermissionAndWelcome();
+    
+    if (success) {
+      if (user) {
+        setUser({ ...user, notifications_enabled: true });
       }
+      toast.success('Notifications enabled!', {
+        description: 'You\'ll get alerts even when the app is closed.',
+      });
+    } else {
+      toast.error('Permission denied', {
+        description: 'You can enable notifications later in settings.',
+      });
     }
     onDismiss(); // Dismiss after handling
   };
