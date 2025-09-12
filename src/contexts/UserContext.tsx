@@ -74,15 +74,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setAuthUser = (authData: AuthUser) => {
     setAuthUserState(authData);
     localStorage.setItem('radarapp-auth', JSON.stringify(authData));
+    
+    // Check if saved user preferences belong to this auth user
+    const savedUser = localStorage.getItem('radar-user');
+    if (savedUser && authData.email) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        // If the saved user email doesn't match current auth user, clear preferences
+        if (parsedUser.email && parsedUser.email !== authData.email) {
+          localStorage.removeItem('radar-user');
+          setUserState(null);
+        }
+      } catch (error) {
+        console.error('Error checking saved user data:', error);
+      }
+    }
   };
 
   const clearUser = () => {
-    setUserState(null);
     setAuthUserState(null);
-    localStorage.removeItem('radar-user');
     localStorage.removeItem('radarapp-auth');
     // Clear notification prompt session storage to avoid re-showing onboarding
     sessionStorage.removeItem('notificationPromptDismissed');
+    // Don't clear user preferences - keep them for when user logs back in
   };
 
   return (
