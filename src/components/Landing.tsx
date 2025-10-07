@@ -20,7 +20,7 @@ const Landing = () => {
   });
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setAuthUser } = useUser();
+  const { setAuthUser, clearUser } = useUser();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const Landing = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
-        setAuthUser(null);
+        clearUser();
       } else if (session) {
         setAuthUser({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',

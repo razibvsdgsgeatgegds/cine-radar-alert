@@ -10,7 +10,10 @@ const Index = () => {
     return <Landing />;
   }
 
-  return isOnboarded ? <Dashboard /> : <Onboarding />;
+  const hasStoredPrefs = typeof window !== 'undefined' && !!localStorage.getItem('radar-user');
+  const onboarded = isOnboarded || hasStoredPrefs;
+
+  return onboarded ? <Dashboard /> : <Onboarding />;
 };
 
 export default Index;
