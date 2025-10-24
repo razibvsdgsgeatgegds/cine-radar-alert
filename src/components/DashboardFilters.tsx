@@ -109,7 +109,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ initialFilte
         </Select>
         <Button onClick={() => onApplyFilters(filters)} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Resync
+          Apply Filters
         </Button>
       </CardContent>
       {totalFilters > 0 && (
