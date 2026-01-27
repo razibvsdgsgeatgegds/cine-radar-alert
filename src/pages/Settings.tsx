@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, User, Save, Info, LogOut, Trash2, Gamepad2, Settings as SettingsIcon, Palette } from 'lucide-react';
+import { ArrowLeft, Bell, User, Save, Info, LogOut, Trash2, Gamepad2, Settings as SettingsIcon, Palette, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Country } from 'country-state-city';
 import { showWelcomeNotification } from '@/lib/utils';
@@ -19,10 +19,11 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Separator } from '@/components/ui/separator';
 
 const Settings: React.FC = () => {
-  const { user, setUser, clearUser } = useUser();
+  const { user, setUser, clearUser, resetPreferences, authUser } = useUser();
   const navigate = useNavigate();
   const [formData, setFormData] = useState(user);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -75,7 +76,13 @@ const Settings: React.FC = () => {
     clearUser();
     navigate('/');
     toast.info("You have been logged out.");
-  }
+  };
+
+  const handleResetPreferences = () => {
+    resetPreferences();
+    toast.success('Preferences reset! Redirecting to onboarding...');
+    navigate('/');
+  };
 
   const handleRemoveFromNotificationList = (id: number, type: 'movie' | 'series') => {
     if (formData) {
@@ -373,22 +380,70 @@ const Settings: React.FC = () => {
           {/* Action Buttons */}
           <Card className="border-border/50 shadow-sm">
             <CardContent className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <Button 
-                  variant="destructive" 
-                  onClick={handleLogout}
-                  className="sm:w-auto"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
-                <Button 
-                  onClick={handleSave} 
-                  className="bg-gradient-to-r from-primary to-[hsl(var(--neon-pink))] hover:opacity-90 transition-opacity sm:w-auto"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
+              <div className="flex flex-col gap-4">
+                {/* Reset Preferences Section */}
+                {!showResetConfirm ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">
+                    <div>
+                      <p className="font-medium text-sm">Reset Preferences</p>
+                      <p className="text-xs text-muted-foreground">Clear all your preferences and go through onboarding again</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowResetConfirm(true)}
+                      className="shrink-0"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Reset
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <p className="font-medium text-sm text-destructive mb-2">Are you sure?</p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      This will clear all your saved preferences including genres, filters, and notification settings. You'll need to complete onboarding again.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setShowResetConfirm(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={handleResetPreferences}
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Yes, Reset Everything
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                <Separator />
+                
+                {/* Main Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleLogout}
+                    className="sm:w-auto"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                  <Button 
+                    onClick={handleSave} 
+                    className="bg-gradient-to-r from-primary to-[hsl(var(--neon-pink))] hover:opacity-90 transition-opacity sm:w-auto"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
