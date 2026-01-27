@@ -24,7 +24,44 @@ const Landing = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already authenticated
+    // Listen for auth changes FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        clearUser();
+      } else if (session) {
+        const email = session.user.email || '';
+        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
+        
+        // Check if returning user
+        const lastLoginKey = `radar-last-login-${email}`;
+        const previousLogin = localStorage.getItem(lastLoginKey);
+        const hasPrefs = localStorage.getItem(`radar-user-${email}`) || localStorage.getItem('radar-user');
+        
+        setAuthUser({
+          name,
+          email,
+          isAuthenticated: true
+        });
+        
+        // Show welcome back message for returning users
+        if (previousLogin && hasPrefs) {
+          const lastDate = new Date(previousLogin);
+          const formattedDate = lastDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          toast({
+            title: `Welcome back, ${name}! 👋`,
+            description: `Last login: ${formattedDate}`,
+          });
+        }
+      }
+    });
+
+    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setAuthUser({
@@ -35,21 +72,8 @@ const Landing = () => {
       }
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        clearUser();
-      } else if (session) {
-        setAuthUser({
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          isAuthenticated: true
-        });
-      }
-    });
-
     return () => subscription.unsubscribe();
-  }, [setAuthUser]);
+  }, [setAuthUser, toast]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();

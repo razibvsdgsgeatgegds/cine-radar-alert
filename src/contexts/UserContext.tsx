@@ -5,6 +5,7 @@ interface AuthUser {
   name: string;
   email: string;
   isAuthenticated: boolean;
+  lastLoginAt?: string;
 }
 
 interface UserContextType {
@@ -13,18 +14,22 @@ interface UserContextType {
   setUser: (user: UserPreferences) => void;
   setAuthUser: (user: AuthUser) => void;
   clearUser: () => void;
+  resetPreferences: () => void;
   isOnboarded: boolean;
   isAuthenticated: boolean;
+  isReturningUser: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 // Helper to get all saved user preferences keyed by email
 const getUserPrefsKey = (email: string) => `radar-user-${email}`;
+const getLastLoginKey = (email: string) => `radar-last-login-${email}`;
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<UserPreferences | null>(null);
   const [authUser, setAuthUserState] = useState<AuthUser | null>(null);
+  const [isReturningUser, setIsReturningUser] = useState(false);
 
   // Load saved auth user and preferences on mount
   useEffect(() => {
@@ -84,7 +89,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Load preferences for a specific email
-  const loadUserPreferences = (email: string) => {
+  const loadUserPreferences = (email: string): boolean => {
     // Try email-specific key first
     const emailSpecificPrefs = localStorage.getItem(getUserPrefsKey(email));
     if (emailSpecificPrefs) {
@@ -133,15 +138,37 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const setAuthUser = (authData: AuthUser) => {
-    setAuthUserState(authData);
-    localStorage.setItem('radarapp-auth', JSON.stringify(authData));
+    // Check if this is a returning user (has previous login)
+    const lastLoginKey = getLastLoginKey(authData.email);
+    const previousLogin = localStorage.getItem(lastLoginKey);
+    const hasExistingPrefs = authData.email && (
+      localStorage.getItem(getUserPrefsKey(authData.email)) ||
+      localStorage.getItem('radar-user')
+    );
+    
+    // Update auth data with last login info
+    const updatedAuthData: AuthUser = {
+      ...authData,
+      lastLoginAt: previousLogin || undefined
+    };
+    
+    setAuthUserState(updatedAuthData);
+    localStorage.setItem('radarapp-auth', JSON.stringify(updatedAuthData));
+    
+    // Save current login time for next session
+    localStorage.setItem(lastLoginKey, new Date().toISOString());
+    
+    // Set returning user flag if they have previous login AND existing preferences
+    if (previousLogin && hasExistingPrefs) {
+      setIsReturningUser(true);
+    }
     
     // When auth changes, try to load existing preferences for this email
     if (authData.email) {
-      const hasExistingPrefs = loadUserPreferences(authData.email);
+      const prefsLoaded = loadUserPreferences(authData.email);
       
       // If no existing prefs found, check if we need to clear mismatched prefs
-      if (!hasExistingPrefs) {
+      if (!prefsLoaded) {
         // Clear any loaded prefs that don't belong to this user
         if (user && user.email && user.email !== authData.email) {
           setUserState(null);
@@ -152,10 +179,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearUser = () => {
     setAuthUserState(null);
+    setIsReturningUser(false);
     localStorage.removeItem('radarapp-auth');
     // Clear notification prompt session storage
     sessionStorage.removeItem('notificationPromptDismissed');
     // Don't clear user preferences - keep them for when user logs back in
+  };
+
+  const resetPreferences = () => {
+    // Clear user preferences from state
+    setUserState(null);
+    
+    // Clear preferences from localStorage
+    if (authUser?.email) {
+      localStorage.removeItem(getUserPrefsKey(authUser.email));
+    }
+    localStorage.removeItem('radar-user');
+    
+    // Clear session storage
+    sessionStorage.removeItem('notificationPromptDismissed');
   };
 
   return (
@@ -165,8 +207,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser,
       setAuthUser,
       clearUser,
+      resetPreferences,
       isOnboarded: !!user,
-      isAuthenticated: !!authUser?.isAuthenticated
+      isAuthenticated: !!authUser?.isAuthenticated,
+      isReturningUser
     }}>
       {children}
     </UserContext.Provider>
