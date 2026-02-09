@@ -3,13 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell, Calendar, Search, Star, Gamepad2, Film, Tv, Mail, User, Sparkles, Zap, Heart, Chrome } from 'lucide-react';
+import { Bell, Calendar, Search, Star, Gamepad2, Film, Tv, Mail, User, Sparkles, Zap, Heart, Chrome, Eye, Users, TrendingUp, Globe } from 'lucide-react';
 import heroRadar from '@/assets/hero-radar.jpg';
+import watchverseLogo from '@/assets/watchverse-logo.png';
 
 const Landing = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,11 +20,64 @@ const Landing = () => {
   });
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(false);
+  const [liveVisitors, setLiveVisitors] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalVisits, setTotalVisits] = useState(0);
   const { setAuthUser, clearUser } = useUser();
   const { toast } = useToast();
 
+  // Track visit and fetch stats
   useEffect(() => {
-    // Listen for auth changes FIRST
+    const trackVisit = async () => {
+      // Generate or retrieve a visitor ID
+      let visitorId = localStorage.getItem('watchverse-visitor-id');
+      if (!visitorId) {
+        visitorId = crypto.randomUUID();
+        localStorage.setItem('watchverse-visitor-id', visitorId);
+      }
+
+      // Log this visit
+      await supabase.from('site_visits').insert({
+        visitor_id: visitorId,
+        page: '/'
+      });
+    };
+
+    const fetchStats = async () => {
+      // Get visitors in the last 5 minutes (live visitors)
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { count: liveCount } = await supabase
+        .from('site_visits')
+        .select('visitor_id', { count: 'exact', head: true })
+        .gte('visited_at', fiveMinutesAgo);
+      
+      // Get unique total visitors
+      const { data: uniqueVisitors } = await supabase
+        .from('site_visits')
+        .select('visitor_id')
+        .limit(1000);
+      
+      const uniqueSet = new Set(uniqueVisitors?.map(v => v.visitor_id) || []);
+      
+      // Get total visits
+      const { count: totalCount } = await supabase
+        .from('site_visits')
+        .select('*', { count: 'exact', head: true });
+
+      setLiveVisitors(Math.max(liveCount || 1, 1));
+      setTotalUsers(uniqueSet.size || 1);
+      setTotalVisits(totalCount || 1);
+    };
+
+    trackVisit();
+    fetchStats();
+
+    // Refresh stats every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         clearUser();
@@ -32,7 +85,6 @@ const Landing = () => {
         const email = session.user.email || '';
         const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
         
-        // Check if returning user
         const lastLoginKey = `radar-last-login-${email}`;
         const previousLogin = localStorage.getItem(lastLoginKey);
         const hasPrefs = localStorage.getItem(`radar-user-${email}`) || localStorage.getItem('radar-user');
@@ -43,7 +95,6 @@ const Landing = () => {
           isAuthenticated: true
         });
         
-        // Show welcome back message for returning users
         if (previousLogin && hasPrefs) {
           const lastDate = new Date(previousLogin);
           const formattedDate = lastDate.toLocaleDateString('en-US', {
@@ -61,7 +112,6 @@ const Landing = () => {
       }
     });
 
-    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setAuthUser({
@@ -200,6 +250,11 @@ const Landing = () => {
     }
   ];
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-dark">
       {/* Animated Background */}
@@ -208,6 +263,30 @@ const Landing = () => {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-electric-blue/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-neon-cyan/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div>
+
+      {/* Navbar */}
+      <nav className="relative z-20 border-b border-primary/10 bg-card/30 backdrop-blur-xl">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={watchverseLogo} alt="WatchVerse Logo" className="h-10 w-10 rounded-lg" />
+            <span className="text-xl font-bold bg-gradient-to-r from-neon-purple via-neon-pink to-electric-blue bg-clip-text text-transparent">
+              WatchVerse
+            </span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground bg-card/50 rounded-full px-3 py-1.5 border border-primary/10">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span>{liveVisitors} online</span>
+            </div>
+            <Button onClick={scrollToSignup} size="sm" className="bg-gradient-primary hover:shadow-glow transition-all">
+              Get Started
+            </Button>
+          </div>
+        </div>
+      </nav>
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
@@ -223,14 +302,14 @@ const Landing = () => {
                 </Badge>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold">
                   <span className="bg-gradient-to-r from-neon-purple via-neon-pink to-electric-blue bg-clip-text text-transparent">
-                    Radar
+                    Watch
                   </span>
                   <span className="bg-gradient-to-r from-electric-blue to-neon-cyan bg-clip-text text-transparent">
-                    App
+                    Verse
                   </span>
                 </h1>
                 <p className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed">
-                  Your personal entertainment command center. Track upcoming movies, TV series, and games with 
+                  Your personal entertainment universe. Track upcoming movies, TV series, and games with 
                   <span className="text-neon-cyan font-semibold"> AI-powered recommendations</span> and 
                   <span className="text-neon-pink font-semibold"> smart notifications</span>.
                 </p>
@@ -275,11 +354,66 @@ const Landing = () => {
               <div className="absolute -inset-1 bg-gradient-primary rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
               <img 
                 src={heroRadar} 
-                alt="RadarApp Dashboard Preview" 
+                alt="WatchVerse Dashboard Preview" 
                 className="relative rounded-lg shadow-card border border-primary/20 w-full h-auto"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent rounded-lg" />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Live Stats Section */}
+      <section className="py-12 sm:py-16 relative">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+              <span className="bg-gradient-to-r from-neon-cyan to-electric-blue bg-clip-text text-transparent">
+                Join Our Growing Community
+              </span>
+            </h2>
+            <p className="text-muted-foreground">Real-time platform stats</p>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
+            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
+              <CardContent className="pt-6 pb-4">
+                <div className="mx-auto mb-3 w-12 h-12 bg-gradient-to-br from-green-500/20 to-green-400/10 rounded-xl flex items-center justify-center border border-green-500/30">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                  </span>
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">{formatNumber(liveVisitors)}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Live Visitors</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
+              <CardContent className="pt-6 pb-4">
+                <div className="mx-auto mb-3 w-12 h-12 bg-gradient-to-br from-neon-purple/20 to-neon-pink/10 rounded-xl flex items-center justify-center border border-neon-purple/30">
+                  <Users className="h-5 w-5 text-neon-purple" />
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">{formatNumber(totalUsers)}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Unique Visitors</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
+              <CardContent className="pt-6 pb-4">
+                <div className="mx-auto mb-3 w-12 h-12 bg-gradient-to-br from-electric-blue/20 to-neon-cyan/10 rounded-xl flex items-center justify-center border border-electric-blue/30">
+                  <Eye className="h-5 w-5 text-electric-blue" />
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">{formatNumber(totalVisits)}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Total Visits</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
+              <CardContent className="pt-6 pb-4">
+                <div className="mx-auto mb-3 w-12 h-12 bg-gradient-to-br from-golden/20 to-accent/10 rounded-xl flex items-center justify-center border border-golden/30">
+                  <Globe className="h-5 w-5 text-golden" />
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">24/7</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Always Online</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
@@ -290,7 +424,7 @@ const Landing = () => {
           <div className="text-center mb-12 lg:mb-16">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 lg:mb-6">
               <span className="bg-gradient-to-r from-neon-purple to-electric-blue bg-clip-text text-transparent">
-                Why Choose RadarApp?
+                Why Choose WatchVerse?
               </span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
@@ -370,18 +504,19 @@ const Landing = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-neon-purple/5 to-electric-blue/5"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-md mx-auto">
-            {/* Authentication */}
             <Card className="shadow-glow bg-card/80 backdrop-blur-sm border-primary/20">
               <CardHeader className="text-center">
+                <div className="mx-auto mb-4">
+                  <img src={watchverseLogo} alt="WatchVerse" className="h-16 w-16 mx-auto rounded-xl" />
+                </div>
                 <CardTitle className="text-3xl bg-gradient-to-r from-neon-purple to-electric-blue bg-clip-text text-transparent">
-                  {isLogin ? 'Welcome Back' : 'Join the Radar'}
+                  {isLogin ? 'Welcome Back' : 'Join WatchVerse'}
                 </CardTitle>
                 <CardDescription className="text-lg">
                   {isLogin ? 'Sign in to continue your entertainment journey' : 'Start tracking your favorite content today'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Google Sign In Button */}
                 <Button
                   onClick={handleGoogleAuth}
                   disabled={loading}
@@ -488,16 +623,17 @@ const Landing = () => {
       {/* Footer */}
       <footer className="py-12 border-t border-primary/20 bg-gradient-to-r from-card/50 to-card/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 text-center">
-          <div className="mb-4">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img src={watchverseLogo} alt="WatchVerse" className="h-8 w-8 rounded-lg" />
             <h3 className="text-2xl font-bold bg-gradient-to-r from-neon-purple to-electric-blue bg-clip-text text-transparent">
-              RadarApp
+              WatchVerse
             </h3>
           </div>
           <p className="text-muted-foreground mb-4">
             Built with <Heart className="inline h-4 w-4 text-neon-pink mx-1" /> for entertainment enthusiasts worldwide
           </p>
           <p className="text-sm text-muted-foreground/70">
-            © 2025 RadarApp. Your entertainment radar is always on.
+            © 2025 WatchVerse. Your entertainment universe is always expanding.
           </p>
         </div>
       </footer>
