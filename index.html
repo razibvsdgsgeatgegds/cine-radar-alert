@@ -3,24 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>WatchVerse - Your Entertainment Universe</title>
+
     <meta name="description" content="Track upcoming movies, TV series, and games based on your interests. Get personalized notifications and never miss a release." />
     <meta name="author" content="WatchVerse" />
 
+    <!-- ✅ FAVICON (Chrome tab icon) -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <meta name="theme-color" content="#000000" />
+
+    <!-- OpenGraph -->
     <meta property="og:title" content="WatchVerse - Your Entertainment Universe" />
     <meta property="og:description" content="Track upcoming movies, TV series, and games based on your interests. Get personalized notifications and never miss a release." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://d33wubrfki0l68.cloudfront.net/68bbb8e05692b93376178e1c/screenshot_2025-09-06-04-31-38-0000.webp" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://d33wubrfki0l68.cloudfront.net/68bbb8e05692b93376178e1c/screenshot_2025-09-06-04-31-38-0000.webp" />
+
+    <!-- ✅ Hide Lovable badge -->
+    <style>
+      #lovable-badge {
+        display: none !important;
+        visibility: hidden !important;
+      }
+    </style>
   </head>
 
   <body>
     <div id="root"></div>
-<a href="https://www.superlaun.ch/products/1639" target="_blank" rel="noopener">
-  <Image src="https://www.superlaun.ch/badge.png" alt="Featured on Super Launch" width="300" height="300" />
-</a>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
