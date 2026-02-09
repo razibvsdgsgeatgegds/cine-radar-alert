@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { UserPreferences } from '@/types';
-import { Radar, Sparkles, Users, Calendar, Star, Languages, Film, Tv } from 'lucide-react';
+import { Sparkles, Users, Calendar, Star, Languages, Film, Tv, Rocket } from 'lucide-react';
+import watchverseLogo from '@/assets/watchverse-logo.png';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Country } from 'country-state-city';
@@ -129,11 +130,9 @@ export const Onboarding: React.FC = () => {
         return (
           <Card className="w-full max-w-md mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
             <CardHeader className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-neon-pink rounded-full flex items-center justify-center">
-                <Users className="w-8 h-8 text-primary-foreground" />
-              </div>
+              <img src={watchverseLogo} alt="WatchVerse" className="mx-auto w-16 h-16 rounded-xl" />
               <CardTitle className="text-2xl bg-gradient-to-r from-primary to-neon-pink bg-clip-text text-transparent">
-                Welcome to RadarApp
+                Welcome to WatchVerse
               </CardTitle>
               <CardDescription>
                 Let's get to know you better to personalize your experience
@@ -278,7 +277,7 @@ export const Onboarding: React.FC = () => {
         <div className="mt-8 flex justify-center space-x-4">
           {step > 1 && (<Button variant="outline" onClick={() => setStep(step - 1)} className="border-primary/20 hover:border-primary">Back</Button>)}
           <Button onClick={step === 5 ? handleComplete : handleNext} disabled={!canProceed()} className="bg-gradient-to-r from-primary to-neon-pink hover:shadow-lg hover:shadow-primary/25 transition-all">
-            {step === 5 ? (<><Radar className="w-4 h-4 mr-2" />Complete Setup</>) : ('Next')}
+            {step === 5 ? (<><Rocket className="w-4 h-4 mr-2" />Complete Setup</>) : ('Next')}
           </Button>
         </div>
       </div>

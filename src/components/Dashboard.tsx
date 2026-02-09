@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/UserContext';
-import { Settings, Radar, Star, TrendingUp, Loader2, Search, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Settings, Star, TrendingUp, Loader2, Search, RefreshCw, AlertTriangle } from 'lucide-react';
+import watchverseLogo from '@/assets/watchverse-logo.png';
 import { ContentCard } from '@/components/ContentCard';
 import { ContentDetailsDialog } from '@/components/ContentDetailsDialog';
 import { Movie, TVShow } from '@/types';
@@ -239,12 +240,10 @@ export const Dashboard: React.FC = () => {
         <header className="border-b border-border/50 backdrop-blur-sm bg-card/20 sticky top-0 z-20">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-neon-pink rounded-lg flex items-center justify-center">
-                <Radar className="w-6 h-6 text-white" />
-              </div>
+              <img src={watchverseLogo} alt="WatchVerse" className="w-10 h-10 rounded-lg" />
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-neon-pink bg-clip-text text-transparent">
-                  RadarApp
+                  WatchVerse
                 </h1>
                 <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>
               </div>
@@ -312,7 +311,7 @@ export const Dashboard: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8"><Radar className="w-12 h-12 mx-auto mb-2 opacity-50" /><p>No upcoming movies found for your preferences.</p></div>
+                  <div className="text-center text-muted-foreground py-8"><Search className="w-12 h-12 mx-auto mb-2 opacity-50" /><p>No upcoming movies found for your preferences.</p></div>
                 )}
               </CardContent>
             </Card>
@@ -336,7 +335,7 @@ export const Dashboard: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8"><Radar className="w-12 h-12 mx-auto mb-2 opacity-50" /><p>No upcoming series found for your preferences.</p></div>
+                  <div className="text-center text-muted-foreground py-8"><Search className="w-12 h-12 mx-auto mb-2 opacity-50" /><p>No upcoming series found for your preferences.</p></div>
                 )}
               </CardContent>
             </Card>
