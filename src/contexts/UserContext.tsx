@@ -187,16 +187,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetPreferences = () => {
-    // Clear user preferences from state
     setUserState(null);
     
-    // Clear preferences from localStorage
     if (authUser?.email) {
       localStorage.removeItem(getUserPrefsKey(authUser.email));
+      // Also clear onboarding completed flag
+      localStorage.removeItem(`watchverse-onboarded-${authUser.email}`);
     }
     localStorage.removeItem('radar-user');
-    
-    // Clear session storage
     sessionStorage.removeItem('notificationPromptDismissed');
   };
 
