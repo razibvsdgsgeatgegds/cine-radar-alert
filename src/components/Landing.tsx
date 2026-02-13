@@ -518,41 +518,86 @@ const Landing = () => {
       </section>
 
       {/* Games Coming Soon Section */}
-      <section className="py-20 relative">
+      <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-golden/5 to-neon-pink/5 blur-3xl"></div>
+        
+        {/* Floating game controller particles */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-10 left-[10%] text-3xl animate-bounce opacity-20" style={{ animationDuration: '3s' }}>🎮</div>
+          <div className="absolute top-20 right-[15%] text-2xl animate-bounce opacity-15" style={{ animationDuration: '4s', animationDelay: '1s' }}>🕹️</div>
+          <div className="absolute bottom-20 left-[20%] text-3xl animate-bounce opacity-20" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🏆</div>
+          <div className="absolute bottom-10 right-[25%] text-2xl animate-bounce opacity-15" style={{ animationDuration: '4.5s', animationDelay: '2s' }}>⚡</div>
+          <div className="absolute top-1/2 left-[5%] text-xl animate-bounce opacity-10" style={{ animationDuration: '5s', animationDelay: '1.5s' }}>🎯</div>
+          <div className="absolute top-1/3 right-[8%] text-xl animate-bounce opacity-10" style={{ animationDuration: '3.8s', animationDelay: '0.8s' }}>🔥</div>
+        </div>
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
-            <div className="inline-flex items-center gap-4 mb-8 bg-card/80 backdrop-blur-sm rounded-full px-6 py-3 border border-golden/30">
+            {/* Animated badge */}
+            <div className="inline-flex items-center gap-4 mb-8 bg-card/80 backdrop-blur-sm rounded-full px-6 py-3 border border-golden/30 animate-fade-in">
               <Gamepad2 className="h-8 w-8 text-golden animate-pulse" />
               <Badge variant="outline" 
-                     className="text-lg px-6 py-2 bg-gradient-to-r from-golden to-neon-pink text-transparent bg-clip-text border-golden/50">
+                     className="text-lg px-6 py-2 bg-gradient-to-r from-golden to-neon-pink text-transparent bg-clip-text border-golden/50 animate-pulse">
                 Coming Soon
               </Badge>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold mb-8">
-              <span className="bg-gradient-to-r from-golden via-neon-pink to-neon-purple bg-clip-text text-transparent">
+            
+            {/* Glowing title */}
+            <h2 className="text-4xl lg:text-6xl font-bold mb-8 animate-fade-in">
+              <span className="bg-gradient-to-r from-golden via-neon-pink to-neon-purple bg-clip-text text-transparent drop-shadow-lg">
                 Games Tracking Is Almost Here!
               </span>
             </h2>
-            <p className="text-xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto">
+            
+            {/* Countdown-style teaser */}
+            <div className="flex justify-center gap-4 sm:gap-8 mb-10 animate-fade-in">
+              {['Days', 'Hours', 'Min', 'Sec'].map((label, i) => (
+                <div key={label} className="flex flex-col items-center" style={{ animationDelay: `${i * 0.1}s` }}>
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-card/80 backdrop-blur-sm border border-golden/30 flex items-center justify-center shadow-lg">
+                    <span className="text-2xl sm:text-3xl font-bold text-golden animate-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
+                      {['??', '??', '??', '??'][i]}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground mt-2">{label}</span>
+                </div>
+              ))}
+            </div>
+            
+            <p className="text-xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto animate-fade-in">
               We're crafting the ultimate gaming experience tracker. Soon you'll discover, track, and get notified about 
               <span className="text-golden font-semibold"> every game release</span> that matches your taste.
             </p>
-            <div className="bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm rounded-2xl p-8 border border-golden/20 shadow-glow">
-              <div className="flex flex-wrap justify-center gap-6 text-sm font-medium">
-                <span className="px-4 py-2 bg-gradient-to-r from-golden/20 to-golden/10 rounded-full border border-golden/30 text-golden">
-                  <Gamepad2 className="h-4 w-4 inline mr-2" />
-                  PC Games
-                </span>
-                <span className="px-4 py-2 bg-gradient-to-r from-electric-blue/20 to-electric-blue/10 rounded-full border border-electric-blue/30 text-electric-blue">
-                  🎮 Console Games
-                </span>
-                <span className="px-4 py-2 bg-gradient-to-r from-neon-pink/20 to-neon-pink/10 rounded-full border border-neon-pink/30 text-neon-pink">
-                  📱 Mobile Games
-                </span>
-                <span className="px-4 py-2 bg-gradient-to-r from-neon-purple/20 to-neon-purple/10 rounded-full border border-neon-purple/30 text-neon-purple">
-                  💎 Indie Games
-                </span>
+            
+            {/* Animated platform cards */}
+            <div className="bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm rounded-2xl p-8 border border-golden/20 shadow-glow animate-fade-in">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { icon: '🖥️', label: 'PC Games', color: 'golden', IconComp: Gamepad2 },
+                  { icon: '🎮', label: 'Console Games', color: 'electric-blue', IconComp: null },
+                  { icon: '📱', label: 'Mobile Games', color: 'neon-pink', IconComp: null },
+                  { icon: '💎', label: 'Indie Games', color: 'neon-purple', IconComp: null },
+                ].map((item, idx) => (
+                  <div
+                    key={item.label}
+                    className={`group relative px-4 py-6 rounded-xl border border-${item.color}/30 bg-gradient-to-b from-${item.color}/10 to-transparent hover:from-${item.color}/20 transition-all duration-500 hover:scale-105 hover:shadow-lg cursor-pointer`}
+                    style={{ animationDelay: `${idx * 0.15}s` }}
+                  >
+                    <div className="text-3xl mb-3 group-hover:scale-125 transition-transform duration-300">
+                      {item.IconComp ? <item.IconComp className={`h-8 w-8 text-${item.color} mx-auto`} /> : <span>{item.icon}</span>}
+                    </div>
+                    <span className={`text-sm font-medium text-${item.color}`}>{item.label}</span>
+                    <div className={`absolute inset-0 rounded-xl bg-${item.color}/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl`} />
+                  </div>
+                ))}
+              </div>
+              
+              {/* Notify me teaser */}
+              <div className="mt-8 flex flex-col items-center gap-3">
+                <p className="text-sm text-muted-foreground">Be the first to know when we launch</p>
+                <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-golden/20 to-neon-pink/20 border border-golden/30 animate-pulse cursor-pointer hover:from-golden/30 hover:to-neon-pink/30 transition-all">
+                  <Bell className="h-4 w-4 text-golden" />
+                  <span className="text-sm font-medium text-golden">Get Notified at Launch 🚀</span>
+                </div>
               </div>
             </div>
           </div>
