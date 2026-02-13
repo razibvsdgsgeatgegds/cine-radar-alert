@@ -23,7 +23,7 @@ const Landing = () => {
   const [liveVisitors, setLiveVisitors] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalVisits, setTotalVisits] = useState(0);
-  const { setAuthUser, clearUser } = useUser();
+  const { setAuthUser, setUser, clearUser } = useUser();
   const { toast } = useToast();
 
   // Track visit and fetch stats
@@ -95,6 +95,7 @@ const Landing = () => {
           isAuthenticated: true
         });
         
+        // If user has logged in before and has prefs, show welcome back
         if (previousLogin && hasPrefs) {
           const lastDate = new Date(previousLogin);
           const formattedDate = lastDate.toLocaleDateString('en-US', {
@@ -109,21 +110,74 @@ const Landing = () => {
             description: `Last login: ${formattedDate}`,
           });
         }
+        
+        // If returning user (has previous login) but no local prefs (e.g. new device/browser),
+        // auto-create minimal prefs so they skip onboarding
+        if (previousLogin && !hasPrefs) {
+          const minimalPrefs = {
+            name,
+            email,
+            gender: '',
+            age: 0,
+            location: { country: '' },
+            interests: { movies: [], series: [], games: [] },
+            notifications_enabled: false,
+            languages: [],
+            industries: [],
+            platforms: [],
+            notification_list: [],
+          };
+          localStorage.setItem(`radar-user-${email}`, JSON.stringify(minimalPrefs));
+          // Force a re-render by setting user in context
+          setUser(minimalPrefs as any);
+          toast({
+            title: `Welcome back, ${name}! 👋`,
+            description: "Your preferences were restored.",
+          });
+        }
+        
+        // Save current login time for next session
+        localStorage.setItem(lastLoginKey, new Date().toISOString());
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
+        const email = session.user.email || '';
+        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
+        const lastLoginKey = `radar-last-login-${email}`;
+        const previousLogin = localStorage.getItem(lastLoginKey);
+        const hasPrefs = localStorage.getItem(`radar-user-${email}`) || localStorage.getItem('radar-user');
+        
         setAuthUser({
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
+          name,
+          email,
           isAuthenticated: true
         });
+        
+        // Same logic: if returning user without local prefs, auto-create them
+        if (previousLogin && !hasPrefs) {
+          const minimalPrefs = {
+            name,
+            email,
+            gender: '',
+            age: 0,
+            location: { country: '' },
+            interests: { movies: [], series: [], games: [] },
+            notifications_enabled: false,
+            languages: [],
+            industries: [],
+            platforms: [],
+            notification_list: [],
+          };
+          localStorage.setItem(`radar-user-${email}`, JSON.stringify(minimalPrefs));
+          setUser(minimalPrefs as any);
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [setAuthUser, toast]);
+  }, [setAuthUser, setUser, toast]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
