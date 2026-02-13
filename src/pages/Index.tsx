@@ -9,12 +9,17 @@ const Dashboard = lazy(() => import('@/components/Dashboard').then(m => ({ defau
 const Index = () => {
   const { isAuthenticated, isOnboarded, authUser } = useUser();
 
+  // Check if onboarding was explicitly completed
+  const onboardingCompleted = typeof window !== 'undefined' && authUser?.email
+    ? localStorage.getItem(`watchverse-onboarded-${authUser.email}`) === 'true'
+    : false;
+
   const hasStoredPrefs = typeof window !== 'undefined' && (
     !!localStorage.getItem('radar-user') ||
     (authUser?.email && !!localStorage.getItem(`radar-user-${authUser.email}`))
   );
   
-  const onboarded = isOnboarded || hasStoredPrefs;
+  const onboarded = (isOnboarded || hasStoredPrefs) && onboardingCompleted;
 
   return (
     <Suspense fallback={<PageLoader />}>

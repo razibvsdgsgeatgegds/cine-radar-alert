@@ -100,6 +100,8 @@ export const Onboarding: React.FC = () => {
       notification_list: []
     };
     setUser(userData);
+    // Mark onboarding as completed for this user
+    localStorage.setItem(`watchverse-onboarded-${formData.email}`, 'true');
     
     console.log(`Simulating welcome email to: ${formData.email}`);
     toast.success('Setup Complete!', {
