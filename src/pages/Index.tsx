@@ -1,16 +1,14 @@
+import { lazy, Suspense } from 'react';
 import { useUser } from '@/contexts/UserContext';
-import { Onboarding } from '@/components/Onboarding';
-import { Dashboard } from '@/components/Dashboard';
-import Landing from '@/components/Landing';
+import { PageLoader } from '@/components/PageLoader';
+
+const Landing = lazy(() => import('@/components/Landing'));
+const Onboarding = lazy(() => import('@/components/Onboarding').then(m => ({ default: m.Onboarding })));
+const Dashboard = lazy(() => import('@/components/Dashboard').then(m => ({ default: m.Dashboard })));
 
 const Index = () => {
   const { isAuthenticated, isOnboarded, authUser } = useUser();
 
-  if (!isAuthenticated) {
-    return <Landing />;
-  }
-
-  // Check both context state and localStorage for preferences
   const hasStoredPrefs = typeof window !== 'undefined' && (
     !!localStorage.getItem('radar-user') ||
     (authUser?.email && !!localStorage.getItem(`radar-user-${authUser.email}`))
@@ -18,7 +16,17 @@ const Index = () => {
   
   const onboarded = isOnboarded || hasStoredPrefs;
 
-  return onboarded ? <Dashboard /> : <Onboarding />;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      {!isAuthenticated ? (
+        <Landing />
+      ) : onboarded ? (
+        <Dashboard />
+      ) : (
+        <Onboarding />
+      )}
+    </Suspense>
+  );
 };
 
 export default Index;
