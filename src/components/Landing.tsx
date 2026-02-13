@@ -184,14 +184,20 @@ const Landing = () => {
   const handleGoogleAuth = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Bypass auth-bridge to prevent localhost:3000 redirect
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/`,
+          skipBrowserRedirect: true
         }
       });
       
       if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
     } catch (error: any) {
       toast({
         title: "Google Sign In Error",
