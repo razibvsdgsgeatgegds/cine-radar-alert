@@ -41,6 +41,36 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_subscribers: {
+        Row: {
+          email: string
+          id: string
+          is_active: boolean
+          name: string | null
+          notification_type: string
+          subscribed_at: string
+          user_id: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          notification_type?: string
+          subscribed_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          notification_type?: string
+          subscribed_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       site_visits: {
         Row: {
           id: string
