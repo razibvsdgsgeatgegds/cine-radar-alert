@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Bell, Calendar, Search, Star, Gamepad2, Film, Tv, Mail, User, Sparkles, Zap, Heart, Chrome, Eye, Users, TrendingUp, Globe } from 'lucide-react';
 import heroRadar from '@/assets/hero-radar.jpg';
 import watchverseLogo from '@/assets/watchverse-logo.png';
+import { SignupPopup } from '@/components/SignupPopup';
 
 const Landing = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -271,7 +272,8 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-dark">
-      {/* Animated Background */}
+      {/* Signup Popup */}
+      <SignupPopup onSignup={scrollToSignup} />
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-neon-purple/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-electric-blue/20 rounded-full blur-3xl animate-pulse delay-1000"></div>

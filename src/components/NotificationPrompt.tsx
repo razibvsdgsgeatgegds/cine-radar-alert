@@ -13,6 +13,7 @@ import { toast } from '@/components/ui/sonner';
 import { useUser } from '@/contexts/UserContext';
 import { BellRing } from 'lucide-react';
 import { NotificationService } from '@/utils/notifications';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NotificationPromptProps {
   open: boolean;
@@ -21,7 +22,7 @@ interface NotificationPromptProps {
 }
 
 export const NotificationPrompt: React.FC<NotificationPromptProps> = ({ open, onOpenChange, onDismiss }) => {
-  const { user, setUser } = useUser();
+  const { user, setUser, authUser } = useUser();
 
   const handleEnableNotifications = async () => {
     const success = await NotificationService.requestPermissionAndWelcome();
@@ -30,6 +31,26 @@ export const NotificationPrompt: React.FC<NotificationPromptProps> = ({ open, on
       if (user) {
         setUser({ ...user, notifications_enabled: true });
       }
+
+      // Save subscriber to database
+      try {
+        const { data: { user: supaUser } } = await supabase.auth.getUser();
+        const email = authUser?.email || user?.email || '';
+        const name = authUser?.name || user?.name || '';
+        
+        if (email) {
+          await supabase.from('notification_subscribers').upsert({
+            email,
+            name,
+            user_id: supaUser?.id || null,
+            is_active: true,
+            notification_type: 'all',
+          }, { onConflict: 'email' });
+        }
+      } catch (err) {
+        console.error('Failed to save notification subscription:', err);
+      }
+
       toast.success('Notifications enabled!', {
         description: 'You\'ll get alerts even when the app is closed.',
       });
@@ -38,7 +59,7 @@ export const NotificationPrompt: React.FC<NotificationPromptProps> = ({ open, on
         description: 'You can enable notifications later in settings.',
       });
     }
-    onDismiss(); // Dismiss after handling
+    onDismiss();
   };
 
   return (
