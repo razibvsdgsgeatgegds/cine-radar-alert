@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Sparkles, Film, Tv, Gamepad2, X, Zap, Bell, Star } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import watchverseLogo from '@/assets/watchverse-logo.png';
 
 interface SignupPopupProps {
@@ -11,13 +15,14 @@ interface SignupPopupProps {
 export const SignupPopup: React.FC<SignupPopupProps> = ({ onSignup }) => {
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Don't show if already dismissed this session or user already signed up
     const wasDismissed = sessionStorage.getItem('signup-popup-dismissed');
     if (wasDismissed) return;
 
-    // Show popup after 8 seconds of browsing
     const timer = setTimeout(() => {
       if (!dismissed) setOpen(true);
     }, 8000);
@@ -31,15 +36,37 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({ onSignup }) => {
     sessionStorage.setItem('signup-popup-dismissed', 'true');
   };
 
-  const handleSignup = () => {
-    setOpen(false);
-    sessionStorage.setItem('signup-popup-dismissed', 'true');
-    onSignup();
+  const handleSignup = async () => {
+    if (!email) {
+      toast.error('Please enter your email');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from('notification_subscribers').upsert({
+        email,
+        name: name || null,
+        is_active: true,
+        notification_type: 'all',
+      }, { onConflict: 'email' });
+
+      if (error) throw error;
+      toast.success('You\'re in! 🎉', { description: 'You\'ll receive exclusive updates.' });
+      setOpen(false);
+      sessionStorage.setItem('signup-popup-dismissed', 'true');
+      onSignup();
+    } catch (err) {
+      console.error('Signup error:', err);
+      toast.error('Something went wrong, try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleDismiss(); }}>
       <DialogContent className="sm:max-w-md border-primary/30 bg-card/95 backdrop-blur-xl p-0 overflow-hidden">
+        <DialogTitle className="sr-only">Join WatchVerse</DialogTitle>
         {/* Gradient top bar */}
         <div className="h-1.5 bg-gradient-to-r from-neon-purple via-neon-pink to-electric-blue" />
         
@@ -87,15 +114,35 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({ onSignup }) => {
             </div>
           </div>
 
+          {/* Email input */}
+          <div className="space-y-2">
+            <Input
+              type="text"
+              placeholder="Your name (optional)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-background/50 border-primary/20"
+            />
+            <Input
+              type="email"
+              placeholder="Your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-background/50 border-primary/20"
+              required
+            />
+          </div>
+
           {/* CTA */}
           <div className="space-y-3">
             <Button 
               onClick={handleSignup}
+              disabled={submitting}
               className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 transform hover:scale-[1.02]"
               size="lg"
             >
               <Sparkles className="h-5 w-5 mr-2" />
-              Join Free — It Takes 30 Seconds
+              {submitting ? 'Joining...' : 'Join Free — Get Updates!'}
             </Button>
             <button 
               onClick={handleDismiss}

@@ -34,18 +34,24 @@ export const NotificationPrompt: React.FC<NotificationPromptProps> = ({ open, on
 
       // Save subscriber to database
       try {
-        const { data: { user: supaUser } } = await supabase.auth.getUser();
+        let supaUserId: string | null = null;
+        try {
+          const { data: { user: supaUser } } = await supabase.auth.getUser();
+          supaUserId = supaUser?.id || null;
+        } catch {}
+        
         const email = authUser?.email || user?.email || '';
         const name = authUser?.name || user?.name || '';
         
         if (email) {
-          await supabase.from('notification_subscribers').upsert({
+          const { error: upsertError } = await supabase.from('notification_subscribers').upsert({
             email,
             name,
-            user_id: supaUser?.id || null,
+            user_id: supaUserId,
             is_active: true,
             notification_type: 'all',
           }, { onConflict: 'email' });
+          if (upsertError) console.error('Upsert error:', upsertError);
         }
       } catch (err) {
         console.error('Failed to save notification subscription:', err);
