@@ -111,11 +111,8 @@ export const tmdbApi = {
     const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'movie');
     params.page = page.toString();
     const url = buildApiUrl('/discover/movie', params);
-    console.log('TMDB Movie API URL:', url);
-    console.log('Movie Genre IDs:', genreIds);
     const response = await fetch(url);
     const data = await response.json();
-    console.log('Movie API Response:', data);
     return data;
   },
 
@@ -123,11 +120,8 @@ export const tmdbApi = {
     const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'series');
     params.page = page.toString();
     const url = buildApiUrl('/discover/tv', params);
-    console.log('TMDB Series API URL:', url);
-    console.log('Series Genre IDs:', genreIds);
     const response = await fetch(url);
     const data = await response.json();
-    console.log('Series API Response:', data);
     return data;
   },
   
@@ -220,10 +214,8 @@ export const tmdbApi = {
     }
 
     const url = buildApiUrl('/search/movie', params);
-    console.log('TMDB Movie Search URL:', url);
     const response = await fetch(url);
     const data = await response.json();
-    console.log('Movie Search Response:', data);
     return data;
   },
 
@@ -274,10 +266,8 @@ export const tmdbApi = {
     }
 
     const url = buildApiUrl('/search/tv', params);
-    console.log('TMDB Series Search URL:', url);
     const response = await fetch(url);
     const data = await response.json();
-    console.log('Series Search Response:', data);
     return data;
   },
 

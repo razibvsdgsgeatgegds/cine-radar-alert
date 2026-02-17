@@ -7,10 +7,67 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell, Calendar, Search, Star, Gamepad2, Film, Tv, Mail, User, Sparkles, Zap, Heart, Chrome, Eye, Users, TrendingUp, Globe } from 'lucide-react';
+import { Bell, Calendar, Search, Star, Gamepad2, Film, Tv, Mail, User, Sparkles, Zap, Heart, Chrome, Eye, Users, TrendingUp, Globe, CheckCircle } from 'lucide-react';
+import { toast as sonnerToast } from '@/components/ui/sonner';
 import heroRadar from '@/assets/hero-radar.jpg';
 import watchverseLogo from '@/assets/watchverse-logo.png';
 import { SignupPopup } from '@/components/SignupPopup';
+
+const GameNotifyForm = () => {
+  const [gameEmail, setGameEmail] = useState('');
+  const [gameSubmitting, setGameSubmitting] = useState(false);
+  const [gameSubmitted, setGameSubmitted] = useState(false);
+
+  const handleGameNotify = async () => {
+    if (!gameEmail) return;
+    setGameSubmitting(true);
+    try {
+      const { error } = await supabase.from('notification_subscribers').upsert({
+        email: gameEmail,
+        name: null,
+        is_active: true,
+        notification_type: 'games',
+      }, { onConflict: 'email' });
+      if (error) throw error;
+      setGameSubmitted(true);
+      sonnerToast.success('You\'ll be notified when games launch! 🎮');
+    } catch {
+      sonnerToast.error('Something went wrong, try again.');
+    } finally {
+      setGameSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-8 flex flex-col items-center gap-3">
+      <p className="text-sm text-muted-foreground">Be the first to know when we launch</p>
+      {gameSubmitted ? (
+        <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-green-500/20 border border-green-500/30">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <span className="text-sm font-medium text-green-400">You're on the list! 🎉</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 w-full max-w-sm">
+          <Input
+            type="email"
+            placeholder="your@email.com"
+            value={gameEmail}
+            onChange={(e) => setGameEmail(e.target.value)}
+            className="bg-background/50 border-golden/30 focus:border-golden/60"
+          />
+          <Button
+            onClick={handleGameNotify}
+            disabled={gameSubmitting || !gameEmail}
+            className="bg-gradient-to-r from-golden to-neon-pink hover:shadow-glow whitespace-nowrap"
+          >
+            <Bell className="h-4 w-4 mr-1" />
+            {gameSubmitting ? '...' : 'Notify Me'}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Landing = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -547,14 +604,7 @@ const Landing = () => {
                 ))}
               </div>
               
-              {/* Notify me teaser */}
-              <div className="mt-8 flex flex-col items-center gap-3">
-                <p className="text-sm text-muted-foreground">Be the first to know when we launch</p>
-                <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-golden/20 to-neon-pink/20 border border-golden/30 animate-pulse cursor-pointer hover:from-golden/30 hover:to-neon-pink/30 transition-all">
-                  <Bell className="h-4 w-4 text-golden" />
-                  <span className="text-sm font-medium text-golden">Get Notified at Launch 🚀</span>
-                </div>
-              </div>
+              <GameNotifyForm />
             </div>
           </div>
         </div>
