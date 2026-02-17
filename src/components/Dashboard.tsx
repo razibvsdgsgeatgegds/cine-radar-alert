@@ -56,7 +56,7 @@ export const Dashboard: React.FC = () => {
       
       if (query.trim()) {
         // Search mode - search all content but only show upcoming
-        console.log('Searching for:', query, 'with filters:', currentFilters);
+        
         
         // First, search all content to check for exact matches with old content
         const [allMoviesResult, allSeriesResult] = await Promise.all([
@@ -91,11 +91,7 @@ export const Dashboard: React.FC = () => {
         const movieGenreIds = getMovieGenreIds(user.interests.movies);
         const seriesGenreIds = getSeriesGenreIds(user.interests.series);
         
-        console.log('User Movie Interests:', user.interests.movies);
-        console.log('User Series Interests:', user.interests.series);
-        console.log('User Location:', user.location.country);
-        console.log('Current Filters:', currentFilters);
-        console.log('Fetching page:', page);
+        
 
         const [moviesResult, seriesResult] = await Promise.all([
           tmdbApi.discoverMovies(movieGenreIds, user.location.country, currentFilters.languages, currentFilters.industries, [], currentFilters.dateRange, page),
