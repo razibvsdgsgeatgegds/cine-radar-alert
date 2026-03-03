@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Country } from 'country-state-city';
 import { toast } from 'sonner';
 import { PLATFORM_LIST } from '@/constants';
+import { EmailService } from '@/services/emailService';
 
 const MOVIE_GENRES = [
   'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary',
@@ -81,7 +82,7 @@ export const Onboarding: React.FC = () => {
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const userData: UserPreferences = {
       name: formData.name,
       email: formData.email,
@@ -103,9 +104,13 @@ export const Onboarding: React.FC = () => {
     // Mark onboarding as completed for this user
     localStorage.setItem(`watchverse-onboarded-${formData.email}`, 'true');
     
-    console.log(`Simulating welcome email to: ${formData.email}`);
+    // Send welcome email via EmailJS
+    const emailSent = await EmailService.sendWelcomeEmail(formData.email, formData.name);
+    
     toast.success('Setup Complete!', {
-      description: `A welcome email has been sent to ${formData.email}.`,
+      description: emailSent 
+        ? `A welcome email has been sent to ${formData.email}.`
+        : 'Your preferences have been saved. Enjoy WatchVerse!',
     });
   };
 
@@ -131,37 +136,37 @@ export const Onboarding: React.FC = () => {
       case 1:
         return (
           <Card className="w-full max-w-md mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-4">
-              <img src={watchverseLogo} alt="WatchVerse" className="mx-auto w-16 h-16 rounded-xl" />
-              <CardTitle className="text-2xl bg-gradient-to-r from-primary to-neon-pink bg-clip-text text-transparent">
+            <CardHeader className="text-center space-y-3 sm:space-y-4">
+              <img src={watchverseLogo} alt="WatchVerse" className="mx-auto w-14 h-14 sm:w-16 sm:h-16 rounded-xl" />
+              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-primary to-neon-pink bg-clip-text text-transparent">
                 Welcome to WatchVerse
               </CardTitle>
-              <CardDescription>
-                Let's get to know you better to personalize your experience
+              <CardDescription className="text-sm">
+                Let's personalize your experience
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="space-y-1.5">
                 <Label htmlFor="name">Full Name</Label>
                 <Input id="name" placeholder="Enter your name" value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" placeholder="your@email.com" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Gender</Label>
-                <RadioGroup defaultValue={formData.gender} onValueChange={(v) => setFormData(p => ({ ...p, gender: v as any}))} className="flex gap-4 pt-2">
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="male" id="male" /><Label htmlFor="male">Male</Label></div>
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="female" id="female" /><Label htmlFor="female">Female</Label></div>
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="other" id="other" /><Label htmlFor="other">Other</Label></div>
+                <RadioGroup defaultValue={formData.gender} onValueChange={(v) => setFormData(p => ({ ...p, gender: v as any}))} className="flex gap-4 pt-1">
+                  <div className="flex items-center space-x-2"><RadioGroupItem value="male" id="male" /><Label htmlFor="male" className="text-sm">Male</Label></div>
+                  <div className="flex items-center space-x-2"><RadioGroupItem value="female" id="female" /><Label htmlFor="female" className="text-sm">Female</Label></div>
+                  <div className="flex items-center space-x-2"><RadioGroupItem value="other" id="other" /><Label htmlFor="other" className="text-sm">Other</Label></div>
                 </RadioGroup>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="age">Age</Label>
                 <Input id="age" type="number" placeholder="25" value={formData.age} onChange={(e) => setFormData(p => ({ ...p, age: e.target.value }))} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Country</Label>
                 <Select value={formData.location.country} onValueChange={countryIso => setFormData(p => ({ ...p, location: { country: countryIso } }))}>
                   <SelectTrigger><SelectValue placeholder="Select Country" /></SelectTrigger>
@@ -174,27 +179,27 @@ export const Onboarding: React.FC = () => {
       case 2:
         return (
           <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-electric-blue to-neon-cyan rounded-full flex items-center justify-center">
-                <Film className="w-8 h-8 text-primary-foreground" />
+            <CardHeader className="text-center space-y-3 sm:space-y-4">
+              <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-electric-blue to-neon-cyan rounded-full flex items-center justify-center">
+                <Film className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" />
               </div>
-              <CardTitle className="text-2xl bg-gradient-to-r from-electric-blue to-neon-cyan bg-clip-text text-transparent">Content Preferences</CardTitle>
-              <CardDescription>Tell us what you like to watch.</CardDescription>
+              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-electric-blue to-neon-cyan bg-clip-text text-transparent">Content Preferences</CardTitle>
+              <CardDescription className="text-sm">Tell us what you like to watch.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-5 sm:space-y-6">
               <div>
-                <Label className="flex items-center gap-2 mb-3 text-lg"><Languages className="w-5 h-5"/>Languages</Label>
+                <Label className="flex items-center gap-2 mb-3 text-base sm:text-lg"><Languages className="w-4 h-4 sm:w-5 sm:h-5"/>Languages</Label>
                 <div className="flex flex-wrap justify-center gap-2">
                   {LANGUAGES.map(lang => (
-                    <Badge key={lang} variant={formData.languages.includes(lang) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.languages.includes(lang) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(lang, 'languages')}>{lang}</Badge>
+                    <Badge key={lang} variant={formData.languages.includes(lang) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.languages.includes(lang) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(lang, 'languages')}>{lang}</Badge>
                   ))}
                 </div>
               </div>
               <div>
-                <Label className="flex items-center gap-2 mb-3 text-lg"><Star className="w-5 h-5"/>Industries</Label>
+                <Label className="flex items-center gap-2 mb-3 text-base sm:text-lg"><Star className="w-4 h-4 sm:w-5 sm:h-5"/>Industries</Label>
                 <div className="flex flex-wrap justify-center gap-2">
                   {INDUSTRIES.map(ind => (
-                    <Badge key={ind} variant={formData.industries.includes(ind) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.industries.includes(ind) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(ind, 'industries')}>{ind}</Badge>
+                    <Badge key={ind} variant={formData.industries.includes(ind) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.industries.includes(ind) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(ind, 'industries')}>{ind}</Badge>
                   ))}
                 </div>
               </div>
@@ -204,19 +209,19 @@ export const Onboarding: React.FC = () => {
       case 3:
         return (
           <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-neon-cyan to-electric-blue rounded-full flex items-center justify-center"><Star className="w-8 h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-2xl bg-gradient-to-r from-neon-cyan to-electric-blue bg-clip-text text-transparent">Movie Preferences</CardTitle>
-              <CardDescription>Select your favorite movie genres</CardDescription>
+            <CardHeader className="text-center space-y-3 sm:space-y-4">
+              <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-neon-cyan to-electric-blue rounded-full flex items-center justify-center"><Star className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" /></div>
+              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-neon-cyan to-electric-blue bg-clip-text text-transparent">Movie Preferences</CardTitle>
+              <CardDescription className="text-sm">Select your favorite movie genres</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-4 flex justify-center">
-                <Button variant="outline" onClick={() => handleSelectAll('movieGenres')} className="border-neon-cyan hover:border-neon-cyan hover:bg-neon-cyan/10">
+                <Button variant="outline" onClick={() => handleSelectAll('movieGenres')} className="border-neon-cyan hover:border-neon-cyan hover:bg-neon-cyan/10 text-sm">
                   Select All
                 </Button>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
-                {MOVIE_GENRES.map(genre => (<Badge key={genre} variant={formData.movieGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.movieGenres.includes(genre) ? 'bg-gradient-to-r from-neon-cyan to-electric-blue text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(genre, 'movieGenres')}>{genre}</Badge>))}
+                {MOVIE_GENRES.map(genre => (<Badge key={genre} variant={formData.movieGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.movieGenres.includes(genre) ? 'bg-gradient-to-r from-neon-cyan to-electric-blue text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(genre, 'movieGenres')}>{genre}</Badge>))}
               </div>
             </CardContent>
           </Card>
@@ -224,19 +229,19 @@ export const Onboarding: React.FC = () => {
       case 4:
         return (
           <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-neon-pink to-primary rounded-full flex items-center justify-center"><Sparkles className="w-8 h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-2xl bg-gradient-to-r from-neon-pink to-primary bg-clip-text text-transparent">Series Preferences</CardTitle>
-              <CardDescription>Select your favorite TV series genres</CardDescription>
+            <CardHeader className="text-center space-y-3 sm:space-y-4">
+              <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-neon-pink to-primary rounded-full flex items-center justify-center"><Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" /></div>
+              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-neon-pink to-primary bg-clip-text text-transparent">Series Preferences</CardTitle>
+              <CardDescription className="text-sm">Select your favorite TV series genres</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-4 flex justify-center">
-                <Button variant="outline" onClick={() => handleSelectAll('seriesGenres')} className="border-neon-pink hover:border-neon-pink hover:bg-neon-pink/10">
+                <Button variant="outline" onClick={() => handleSelectAll('seriesGenres')} className="border-neon-pink hover:border-neon-pink hover:bg-neon-pink/10 text-sm">
                   Select All
                 </Button>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
-                {SERIES_GENRES.map(genre => (<Badge key={genre} variant={formData.seriesGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.seriesGenres.includes(genre) ? 'bg-gradient-to-r from-neon-pink to-primary text-primary-foreground' : 'hover:border-neon-pink'}`} onClick={() => handleToggle(genre, 'seriesGenres')}>{genre}</Badge>))}
+                {SERIES_GENRES.map(genre => (<Badge key={genre} variant={formData.seriesGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.seriesGenres.includes(genre) ? 'bg-gradient-to-r from-neon-pink to-primary text-primary-foreground' : 'hover:border-neon-pink'}`} onClick={() => handleToggle(genre, 'seriesGenres')}>{genre}</Badge>))}
               </div>
             </CardContent>
           </Card>
@@ -244,19 +249,19 @@ export const Onboarding: React.FC = () => {
       case 5:
         return (
           <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-golden to-accent rounded-full flex items-center justify-center"><Calendar className="w-8 h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-2xl bg-gradient-to-r from-golden to-accent bg-clip-text text-transparent">Gaming Preferences</CardTitle>
-              <CardDescription>Select your favorite game genres</CardDescription>
+            <CardHeader className="text-center space-y-3 sm:space-y-4">
+              <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-golden to-accent rounded-full flex items-center justify-center"><Calendar className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" /></div>
+              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-golden to-accent bg-clip-text text-transparent">Gaming Preferences</CardTitle>
+              <CardDescription className="text-sm">Select your favorite game genres</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-4 flex justify-center">
-                <Button variant="outline" onClick={() => handleSelectAll('gameGenres')} className="border-golden hover:border-golden hover:bg-golden/10">
+                <Button variant="outline" onClick={() => handleSelectAll('gameGenres')} className="border-golden hover:border-golden hover:bg-golden/10 text-sm">
                   Select All
                 </Button>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
-                {GAME_GENRES.map(genre => (<Badge key={genre} variant={formData.gameGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer p-3 text-center transition-all ${formData.gameGenres.includes(genre) ? 'bg-gradient-to-r from-golden to-accent text-primary-foreground' : 'hover:border-golden'}`} onClick={() => handleToggle(genre, 'gameGenres')}>{genre}</Badge>))}
+                {GAME_GENRES.map(genre => (<Badge key={genre} variant={formData.gameGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.gameGenres.includes(genre) ? 'bg-gradient-to-r from-golden to-accent text-primary-foreground' : 'hover:border-golden'}`} onClick={() => handleToggle(genre, 'gameGenres')}>{genre}</Badge>))}
               </div>
             </CardContent>
           </Card>
@@ -267,18 +272,18 @@ export const Onboarding: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary flex flex-col items-center justify-center p-3 sm:p-4">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
       <div className="relative z-10 w-full max-w-4xl">
-        <div className="mb-8 flex justify-center">
+        <div className="mb-6 sm:mb-8 flex justify-center">
           <div className="flex space-x-2">
-            {[1, 2, 3, 4, 5].map(i => (<div key={i} className={`w-3 h-3 rounded-full transition-all ${i <= step ? 'bg-primary' : 'bg-muted'}`} />))}
+            {[1, 2, 3, 4, 5].map(i => (<div key={i} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all ${i <= step ? 'bg-primary' : 'bg-muted'}`} />))}
           </div>
         </div>
         {renderStep()}
-        <div className="mt-8 flex justify-center space-x-4">
-          {step > 1 && (<Button variant="outline" onClick={() => setStep(step - 1)} className="border-primary/20 hover:border-primary">Back</Button>)}
-          <Button onClick={step === 5 ? handleComplete : handleNext} disabled={!canProceed()} className="bg-gradient-to-r from-primary to-neon-pink hover:shadow-lg hover:shadow-primary/25 transition-all">
+        <div className="mt-6 sm:mt-8 flex justify-center space-x-3 sm:space-x-4">
+          {step > 1 && (<Button variant="outline" onClick={() => setStep(step - 1)} className="border-primary/20 hover:border-primary text-sm">Back</Button>)}
+          <Button onClick={step === 5 ? handleComplete : handleNext} disabled={!canProceed()} className="bg-gradient-to-r from-primary to-neon-pink hover:shadow-lg hover:shadow-primary/25 transition-all text-sm">
             {step === 5 ? (<><Rocket className="w-4 h-4 mr-2" />Complete Setup</>) : ('Next')}
           </Button>
         </div>
