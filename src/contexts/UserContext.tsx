@@ -123,13 +123,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? localStorage.getItem(getOnboardedKey(accountEmail)) === 'true'
           : false;
         if (local || localCompleted) {
-          await supabase.from('profiles').upsert({
+          await supabase.from('profiles').upsert([{
             id: sbUser.id,
             email: accountEmail,
             name: local?.name ?? null,
             preferences: local ? (local as unknown as Record<string, unknown>) : null,
             onboarding_completed: localCompleted,
-          });
+          }]);
         }
       }
     } catch (error) {
@@ -167,11 +167,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: { user: sbUser } } = await supabase.auth.getUser();
       if (!sbUser) return;
-      await supabase.from('profiles').upsert({
+      await supabase.from('profiles').upsert([{
         id: sbUser.id,
         email: sbUser.email ?? null,
         ...patch,
-      });
+      }]);
     } catch (error) {
       console.error('Failed to save profile:', error);
     }
