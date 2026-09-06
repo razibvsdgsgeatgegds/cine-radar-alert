@@ -20,7 +20,7 @@ const PROMO_TEMPLATES = [
         <h2 style="color: #fff; font-size: 22px;">This Week's Must-Watch Releases!</h2>
         <p style="color: #c0c0d0; line-height: 1.6;">New blockbusters and binge-worthy series just dropped. Your personalized dashboard has fresh recommendations waiting for you.</p>
         <div style="text-align: center; margin: 24px 0;">
-          <a href="https://watchversea.lovable.app" style="display: inline-block; background: linear-gradient(90deg, #8b5cf6, #ec4899); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Check Your Dashboard →</a>
+          <a href="https://watchverse.trynoryvex.com" style="display: inline-block; background: linear-gradient(90deg, #8b5cf6, #ec4899); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Check Your Dashboard →</a>
         </div>
         <p style="color: #808090; font-size: 12px; text-align: center; margin-top: 32px;">You're receiving this because you enabled notifications on WatchVerse.</p>
       </div>
@@ -42,7 +42,7 @@ const PROMO_TEMPLATES = [
           <p style="color: #c4b5fd; margin: 0;">🎯 <strong>Pro Tip:</strong> Enable notifications to never miss a release date!</p>
         </div>
         <div style="text-align: center; margin: 24px 0;">
-          <a href="https://watchversea.lovable.app" style="display: inline-block; background: linear-gradient(90deg, #3b82f6, #06b6d4); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Explore Now →</a>
+          <a href="https://watchverse.trynoryvex.com" style="display: inline-block; background: linear-gradient(90deg, #3b82f6, #06b6d4); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Explore Now →</a>
         </div>
         <p style="color: #808090; font-size: 12px; text-align: center; margin-top: 32px;">You're receiving this because you enabled notifications on WatchVerse.</p>
       </div>
@@ -66,7 +66,7 @@ const PROMO_TEMPLATES = [
           <span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 16px; border-radius: 20px; font-size: 13px; color: #fcd34d;">🎮 Games Soon</span>
         </div>
         <div style="text-align: center; margin: 24px 0;">
-          <a href="https://watchversea.lovable.app" style="display: inline-block; background: linear-gradient(90deg, #f59e0b, #ec4899); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Come Back →</a>
+          <a href="https://watchverse.trynoryvex.com" style="display: inline-block; background: linear-gradient(90deg, #f59e0b, #ec4899); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Come Back →</a>
         </div>
         <p style="color: #808090; font-size: 12px; text-align: center; margin-top: 32px;">You're receiving this because you enabled notifications on WatchVerse.</p>
       </div>
@@ -151,7 +151,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: 'WatchVerse <onboarding@resend.dev>',
+            from: 'WatchVerse <watchverse@trynoryvex.com>',
             to: [sub.email],
             subject: template.subject,
             html: personalizedBody,
