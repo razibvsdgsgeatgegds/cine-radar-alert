@@ -7,25 +7,18 @@ const Onboarding = lazy(() => import('@/components/Onboarding').then(m => ({ def
 const Dashboard = lazy(() => import('@/components/Dashboard').then(m => ({ default: m.Dashboard })));
 
 const Index = () => {
-  const { isAuthenticated, isOnboarded, authUser } = useUser();
+  const { isAuthenticated, onboardingCompleted, isProfileLoading } = useUser();
 
-  // Check if onboarding was explicitly completed
-  const onboardingCompleted = typeof window !== 'undefined' && authUser?.email
-    ? localStorage.getItem(`watchverse-onboarded-${authUser.email}`) === 'true'
-    : false;
-
-  const hasStoredPrefs = typeof window !== 'undefined' && (
-    !!localStorage.getItem('radar-user') ||
-    (authUser?.email && !!localStorage.getItem(`radar-user-${authUser.email}`))
-  );
-  
-  const onboarded = (isOnboarded || hasStoredPrefs) && onboardingCompleted;
+  // Wait for the account check before deciding to show setup again
+  if (isAuthenticated && isProfileLoading && !onboardingCompleted) {
+    return <PageLoader />;
+  }
 
   return (
     <Suspense fallback={<PageLoader />}>
       {!isAuthenticated ? (
         <Landing />
-      ) : onboarded ? (
+      ) : onboardingCompleted ? (
         <Dashboard />
       ) : (
         <Onboarding />

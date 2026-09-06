@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { UserPreferences } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthUser {
   name: string;
@@ -15,7 +16,10 @@ interface UserContextType {
   setAuthUser: (user: AuthUser) => void;
   clearUser: () => void;
   resetPreferences: () => void;
+  markOnboardingComplete: () => void;
   isOnboarded: boolean;
+  onboardingCompleted: boolean;
+  isProfileLoading: boolean;
   isAuthenticated: boolean;
   isReturningUser: boolean;
 }
@@ -25,43 +29,14 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 // Helper to get all saved user preferences keyed by email
 const getUserPrefsKey = (email: string) => `radar-user-${email}`;
 const getLastLoginKey = (email: string) => `radar-last-login-${email}`;
+const getOnboardedKey = (email: string) => `watchverse-onboarded-${email}`;
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<UserPreferences | null>(null);
   const [authUser, setAuthUserState] = useState<AuthUser | null>(null);
   const [isReturningUser, setIsReturningUser] = useState(false);
-
-  // Load saved auth user and preferences on mount
-  useEffect(() => {
-    const savedAuthUser = localStorage.getItem('radarapp-auth');
-    
-    if (savedAuthUser) {
-      try {
-        const parsedAuth = JSON.parse(savedAuthUser);
-        setAuthUserState(parsedAuth);
-        
-        // Try to load preferences for this user's email
-        if (parsedAuth.email) {
-          loadUserPreferences(parsedAuth.email);
-        }
-      } catch (error) {
-        console.error('Error parsing saved auth data:', error);
-        localStorage.removeItem('radarapp-auth');
-      }
-    } else {
-      // Fallback: try to load from old 'radar-user' key for migration
-      const legacyUser = localStorage.getItem('radar-user');
-      if (legacyUser) {
-        try {
-          const parsedUser = JSON.parse(legacyUser);
-          setUserState(createUserWithDefaults(parsedUser));
-        } catch (error) {
-          console.error('Failed to parse legacy user data:', error);
-          localStorage.removeItem('radar-user');
-        }
-      }
-    }
-  }, []);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
   // Create user preferences with default values
   const createUserWithDefaults = (userData: Partial<UserPreferences>): UserPreferences => {
@@ -79,123 +54,207 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       notification_list: [],
       ...userData,
     };
-    
-    // Ensure location has proper structure
+
     if (!defaultUser.location?.country) {
       defaultUser.location = { country: '' };
     }
-    
+
     return defaultUser;
   };
 
-  // Load preferences for a specific email
-  const loadUserPreferences = (email: string): boolean => {
-    // Try email-specific key first
+  // Load preferences for a specific email from localStorage (fast path / offline fallback)
+  const loadLocalPreferences = useCallback((email: string): UserPreferences | null => {
     const emailSpecificPrefs = localStorage.getItem(getUserPrefsKey(email));
     if (emailSpecificPrefs) {
       try {
-        const parsedUser = JSON.parse(emailSpecificPrefs);
-        setUserState(createUserWithDefaults(parsedUser));
-        return true;
+        return createUserWithDefaults(JSON.parse(emailSpecificPrefs));
       } catch (error) {
         console.error('Failed to parse user preferences:', error);
       }
     }
-    
-    // Fallback: check legacy 'radar-user' key
+
     const legacyUser = localStorage.getItem('radar-user');
     if (legacyUser) {
       try {
         const parsedUser = JSON.parse(legacyUser);
-        // If legacy prefs match this email, migrate to new key
         if (parsedUser.email === email || !parsedUser.email) {
           parsedUser.email = email;
-          const userWithDefaults = createUserWithDefaults(parsedUser);
-          setUserState(userWithDefaults);
-          // Migrate to email-specific storage
-          localStorage.setItem(getUserPrefsKey(email), JSON.stringify(userWithDefaults));
+          const withDefaults = createUserWithDefaults(parsedUser);
+          localStorage.setItem(getUserPrefsKey(email), JSON.stringify(withDefaults));
           localStorage.removeItem('radar-user');
-          return true;
+          return withDefaults;
         }
       } catch (error) {
         console.error('Failed to parse legacy user data:', error);
       }
     }
-    
-    return false;
-  };
+
+    return null;
+  }, []);
+
+  // Load the account-level profile (works on any device / browser)
+  const syncProfileFromServer = useCallback(async (email?: string) => {
+    setIsProfileLoading(true);
+    try {
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
+      if (!sbUser) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('preferences, onboarding_completed, name, email')
+        .eq('id', sbUser.id)
+        .maybeSingle();
+
+      const accountEmail = email || sbUser.email || '';
+
+      if (profile?.onboarding_completed) {
+        setOnboardingCompleted(true);
+        if (accountEmail) localStorage.setItem(getOnboardedKey(accountEmail), 'true');
+      }
+
+      if (profile?.preferences) {
+        const prefs = createUserWithDefaults(profile.preferences as Partial<UserPreferences>);
+        setUserState(prefs);
+        if (accountEmail) localStorage.setItem(getUserPrefsKey(accountEmail), JSON.stringify(prefs));
+      } else if (!profile) {
+        // First time we see this account on the server: push up anything stored locally
+        const local = accountEmail ? loadLocalPreferences(accountEmail) : null;
+        const localCompleted = accountEmail
+          ? localStorage.getItem(getOnboardedKey(accountEmail)) === 'true'
+          : false;
+        if (local || localCompleted) {
+          await supabase.from('profiles').upsert({
+            id: sbUser.id,
+            email: accountEmail,
+            name: local?.name ?? null,
+            preferences: local ? (local as unknown as Record<string, unknown>) : null,
+            onboarding_completed: localCompleted,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Profile sync failed:', error);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, [loadLocalPreferences]);
+
+  // Load saved auth user and preferences on mount
+  useEffect(() => {
+    const savedAuthUser = localStorage.getItem('radarapp-auth');
+
+    if (savedAuthUser) {
+      try {
+        const parsedAuth = JSON.parse(savedAuthUser);
+        setAuthUserState(parsedAuth);
+
+        if (parsedAuth.email) {
+          const local = loadLocalPreferences(parsedAuth.email);
+          if (local) setUserState(local);
+          if (localStorage.getItem(getOnboardedKey(parsedAuth.email)) === 'true') {
+            setOnboardingCompleted(true);
+          }
+        }
+        syncProfileFromServer(parsedAuth.email);
+      } catch (error) {
+        console.error('Error parsing saved auth data:', error);
+        localStorage.removeItem('radarapp-auth');
+      }
+    }
+  }, [loadLocalPreferences, syncProfileFromServer]);
+
+  const persistProfile = useCallback(async (patch: Record<string, unknown>) => {
+    try {
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
+      if (!sbUser) return;
+      await supabase.from('profiles').upsert({
+        id: sbUser.id,
+        email: sbUser.email ?? null,
+        ...patch,
+      });
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+    }
+  }, []);
 
   const setUser = (userData: UserPreferences) => {
     setUserState(userData);
-    
-    // Save to email-specific key
+
     if (userData.email) {
       localStorage.setItem(getUserPrefsKey(userData.email), JSON.stringify(userData));
     }
-    
-    // Also save to legacy key for backward compatibility
     localStorage.setItem('radar-user', JSON.stringify(userData));
+
+    persistProfile({
+      name: userData.name || null,
+      preferences: userData as unknown as Record<string, unknown>,
+    });
+  };
+
+  const markOnboardingComplete = () => {
+    setOnboardingCompleted(true);
+    if (authUser?.email) {
+      localStorage.setItem(getOnboardedKey(authUser.email), 'true');
+    }
+    persistProfile({ onboarding_completed: true });
   };
 
   const setAuthUser = (authData: AuthUser) => {
-    // Check if this is a returning user (has previous login)
     const lastLoginKey = getLastLoginKey(authData.email);
     const previousLogin = localStorage.getItem(lastLoginKey);
     const hasExistingPrefs = authData.email && (
       localStorage.getItem(getUserPrefsKey(authData.email)) ||
       localStorage.getItem('radar-user')
     );
-    
-    // Update auth data with last login info
+
     const updatedAuthData: AuthUser = {
       ...authData,
       lastLoginAt: previousLogin || undefined
     };
-    
+
     setAuthUserState(updatedAuthData);
     localStorage.setItem('radarapp-auth', JSON.stringify(updatedAuthData));
-    
-    // Save current login time for next session
     localStorage.setItem(lastLoginKey, new Date().toISOString());
-    
-    // Set returning user flag if they have previous login AND existing preferences
+
     if (previousLogin && hasExistingPrefs) {
       setIsReturningUser(true);
     }
-    
-    // When auth changes, try to load existing preferences for this email
+
     if (authData.email) {
-      const prefsLoaded = loadUserPreferences(authData.email);
-      
-      // If no existing prefs found, check if we need to clear mismatched prefs
-      if (!prefsLoaded) {
-        // Clear any loaded prefs that don't belong to this user
-        if (user && user.email && user.email !== authData.email) {
-          setUserState(null);
-        }
+      const local = loadLocalPreferences(authData.email);
+      if (local) {
+        setUserState(local);
+      } else if (user && user.email && user.email !== authData.email) {
+        setUserState(null);
       }
+      if (localStorage.getItem(getOnboardedKey(authData.email)) === 'true') {
+        setOnboardingCompleted(true);
+      }
+      // Authoritative check against the account stored in the database
+      syncProfileFromServer(authData.email);
     }
   };
 
   const clearUser = () => {
     setAuthUserState(null);
     setIsReturningUser(false);
+    setOnboardingCompleted(false);
     localStorage.removeItem('radarapp-auth');
-    // Clear notification prompt session storage
     sessionStorage.removeItem('notificationPromptDismissed');
     // Don't clear user preferences - keep them for when user logs back in
   };
 
   const resetPreferences = () => {
     setUserState(null);
-    
+    setOnboardingCompleted(false);
+
     if (authUser?.email) {
       localStorage.removeItem(getUserPrefsKey(authUser.email));
-      // Also clear onboarding completed flag
-      localStorage.removeItem(`watchverse-onboarded-${authUser.email}`);
+      localStorage.removeItem(getOnboardedKey(authUser.email));
     }
     localStorage.removeItem('radar-user');
     sessionStorage.removeItem('notificationPromptDismissed');
+    persistProfile({ preferences: null, onboarding_completed: false });
   };
 
   return (
@@ -206,7 +265,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthUser,
       clearUser,
       resetPreferences,
+      markOnboardingComplete,
       isOnboarded: !!user,
+      onboardingCompleted,
+      isProfileLoading,
       isAuthenticated: !!authUser?.isAuthenticated,
       isReturningUser
     }}>
