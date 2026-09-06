@@ -127,7 +127,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: sbUser.id,
             email: accountEmail,
             name: local?.name ?? null,
-            preferences: local ? (local as unknown as Record<string, unknown>) : null,
+            preferences: local ? (local as unknown as any) : null,
             onboarding_completed: localCompleted,
           }]);
         }
@@ -163,7 +163,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [loadLocalPreferences, syncProfileFromServer]);
 
-  const persistProfile = useCallback(async (patch: Record<string, unknown>) => {
+  const persistProfile = useCallback(async (patch: Record<string, any>) => {
     try {
       const { data: { user: sbUser } } = await supabase.auth.getUser();
       if (!sbUser) return;
@@ -187,7 +187,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     persistProfile({
       name: userData.name || null,
-      preferences: userData as unknown as Record<string, unknown>,
+      preferences: userData as unknown as any,
     });
   };
 
