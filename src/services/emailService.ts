@@ -22,7 +22,7 @@ export const EmailService = {
         to_email: toEmail,
         to_name: toName || 'Friend',
         subject: '🎬 Welcome to WatchVerse!',
-        message: `Hey ${toName || 'there'}! Welcome to WatchVerse — your personal entertainment universe. Start exploring upcoming movies, series, and soon games! Visit: https://watchversea.lovable.app`,
+        message: `Hey ${toName || 'there'}! Welcome to WatchVerse — your personal entertainment universe. Start exploring upcoming movies, series, and soon games! Visit: https://watchverse.trynoryvex.com`,
       });
       return true;
     } catch (error) {

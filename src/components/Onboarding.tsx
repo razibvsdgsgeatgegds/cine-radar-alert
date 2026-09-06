@@ -38,7 +38,7 @@ const INDUSTRIES = ['Hollywood', 'Bollywood', 'Tollywood', 'Lollywood', 'Kollywo
 
 export const Onboarding: React.FC = () => {
   const [step, setStep] = useState(1);
-  const { authUser, setUser } = useUser();
+  const { authUser, setUser, markOnboardingComplete } = useUser();
   const [formData, setFormData] = useState({
     name: authUser?.name || '',
     email: authUser?.email || '',
@@ -101,8 +101,9 @@ export const Onboarding: React.FC = () => {
       notification_list: []
     };
     setUser(userData);
-    // Mark onboarding as completed for this user
-    localStorage.setItem(`watchverse-onboarded-${formData.email}`, 'true');
+    // Mark onboarding as completed for this account (saved to the database too)
+    markOnboardingComplete();
+
     
     // Send welcome email via EmailJS
     const emailSent = await EmailService.sendWelcomeEmail(formData.email, formData.name);
