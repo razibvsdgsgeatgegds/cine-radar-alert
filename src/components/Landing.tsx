@@ -417,7 +417,8 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Live Stats Section */}
+      {/* Live Stats Section (hidden until numbers are meaningful) */}
+      {false && (
       <section className="py-8 sm:py-16 relative">
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-6 sm:mb-8">
@@ -429,41 +430,29 @@ const Landing = () => {
             <p className="text-sm text-muted-foreground">Real-time platform stats</p>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 max-w-4xl mx-auto">
-            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
+            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20">
               <CardContent className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-2 sm:px-6">
-                <div className="mx-auto mb-2 sm:mb-3 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500/20 to-green-400/10 rounded-xl flex items-center justify-center border border-green-500/30">
-                  <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green-500"></span>
-                  </span>
-                </div>
                 <p className="text-xl sm:text-3xl font-bold text-foreground">{formatNumber(liveVisitors)}</p>
                 <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Live Visitors</p>
               </CardContent>
             </Card>
-            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
+            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20">
               <CardContent className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-2 sm:px-6">
-                <div className="mx-auto mb-2 sm:mb-3 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-neon-purple/20 to-neon-pink/10 rounded-xl flex items-center justify-center border border-neon-purple/30">
-                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-neon-purple" />
-                </div>
+                <Users className="h-5 w-5 mx-auto text-neon-purple" />
                 <p className="text-xl sm:text-3xl font-bold text-foreground">{formatNumber(totalUsers)}</p>
                 <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Unique Visitors</p>
               </CardContent>
             </Card>
-            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
+            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20">
               <CardContent className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-2 sm:px-6">
-                <div className="mx-auto mb-2 sm:mb-3 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-electric-blue/20 to-neon-cyan/10 rounded-xl flex items-center justify-center border border-electric-blue/30">
-                  <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-electric-blue" />
-                </div>
+                <Eye className="h-5 w-5 mx-auto text-electric-blue" />
                 <p className="text-xl sm:text-3xl font-bold text-foreground">{formatNumber(totalVisits)}</p>
                 <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Total Visits</p>
               </CardContent>
             </Card>
-            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
+            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20">
               <CardContent className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-2 sm:px-6">
-                <div className="mx-auto mb-2 sm:mb-3 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-golden/20 to-accent/10 rounded-xl flex items-center justify-center border border-golden/30">
-                  <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-golden" />
-                </div>
+                <Globe className="h-5 w-5 mx-auto text-golden" />
                 <p className="text-xl sm:text-3xl font-bold text-foreground">24/7</p>
                 <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Always Online</p>
               </CardContent>
@@ -471,6 +460,7 @@ const Landing = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Features Section */}
       <section className="py-12 sm:py-20 relative">
@@ -538,6 +528,7 @@ const Landing = () => {
               </span>
             </h2>
             
+            {false && (
             <div className="flex justify-center gap-3 sm:gap-8 mb-8 sm:mb-10">
               {['Days', 'Hours', 'Min', 'Sec'].map((label, i) => (
                 <div key={label} className="flex flex-col items-center">
@@ -550,6 +541,7 @@ const Landing = () => {
                 </div>
               ))}
             </div>
+            )}
             
             <p className="text-sm sm:text-xl text-muted-foreground mb-8 sm:mb-12 leading-relaxed max-w-3xl mx-auto px-2">
               We're crafting the ultimate gaming experience tracker. Soon you'll discover, track, and get notified about 
