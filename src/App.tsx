@@ -11,6 +11,7 @@ import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 
 const Settings = lazy(() => import("./pages/Settings"));
+const Releases = lazy(() => import("./pages/Releases"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
