@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 import { Bell, Calendar, Search, Star, Gamepad2, Film, Tv, Mail, User, Sparkles, Zap, Heart, Chrome, Eye, Users, TrendingUp, Globe, CheckCircle, Shield, ArrowRight } from 'lucide-react';
 import { toast as sonnerToast } from '@/components/ui/sonner';
 import heroRadar from '@/assets/hero-radar.jpg';
@@ -333,6 +334,12 @@ const Landing = () => {
               <span>{liveVisitors} online</span>
             </div>
             <ThemeToggle />
+            <Button asChild variant="ghost" size="sm" className="text-xs sm:text-sm px-2 sm:px-3 hover:bg-primary/10">
+              <Link to="/releases">
+                <Film className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Releases</span>
+              </Link>
+            </Button>
             <Button onClick={scrollToSignup} size="sm" className="bg-gradient-primary hover:shadow-glow transition-all text-xs sm:text-sm px-3 sm:px-4">
               <ArrowRight className="h-4 w-4 mr-1 sm:hidden" />
               <span className="hidden sm:inline">Get Started</span>

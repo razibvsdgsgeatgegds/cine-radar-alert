@@ -107,6 +107,27 @@ const buildDiscoverParams = (
 };
 
 export const tmdbApi = {
+  // Public release calendar: future-only releases sorted by date, no login required
+  discoverUpcomingPublic: async (type: 'movie' | 'series', window: 'week' | 'month' | 'soonest', page: number = 1) => {
+    const dateKey = type === 'movie' ? 'primary_release_date' : 'first_air_date';
+    const params: Record<string, string> = {
+      sort_by: `${dateKey}.asc`,
+      watch_region: 'US',
+      page: page.toString(),
+      [`${dateKey}.gte`]: getTodayDateString(), // ONLY today or future
+    };
+
+    const daysAhead = window === 'week' ? 7 : window === 'month' ? 31 : 120;
+    params[`${dateKey}.lte`] = new Date(Date.now() + daysAhead * 86400000).toISOString().split('T')[0];
+
+    // Skip zero-signal titles so the calendar isn't a wall of obscure entries
+    params['vote_count.gte'] = type === 'movie' ? '3' : '1';
+
+    const url = buildApiUrl(type === 'movie' ? '/discover/movie' : '/discover/tv', params);
+    const response = await fetch(url);
+    return response.json();
+  },
+
   discoverMovies: async (genreIds: number[], region: string, languages: string[], industries: string[], platforms: string[], dateRange: string, page: number = 1) => {
     const params = buildDiscoverParams(genreIds, region, languages, industries, platforms, dateRange, 'movie');
     params.page = page.toString();
