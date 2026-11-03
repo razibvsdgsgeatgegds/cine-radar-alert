@@ -64,7 +64,7 @@ export default function Releases() {
   const { type: typeParam } = useParams<{ type?: string }>();
   const navigate = useNavigate();
   const type: PublicType = typeParam === 'series' ? 'series' : 'movies';
-  const [window, setWindow] = useState<ReleaseWindow>('week');
+  const [activeWindow, setWindow] = useState<ReleaseWindow>('week');
   const [items, setItems] = useState<ReleaseItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -76,17 +76,17 @@ export default function Releases() {
 
   const typeLabel = type === 'movies' ? 'Movies' : 'Series';
   const heading = type === 'movies'
-    ? `New Movies ${WINDOW_LABELS[window] === 'coming soon' ? 'Coming Soon' : WINDOW_LABELS[window]}`
-    : `New Series ${WINDOW_LABELS[window] === 'coming soon' ? 'Coming Soon' : WINDOW_LABELS[window]}`;
+    ? `New Movies ${WINDOW_LABELS[activeWindow] === 'coming soon' ? 'Coming Soon' : WINDOW_LABELS[activeWindow]}`
+    : `New Series ${WINDOW_LABELS[activeWindow] === 'coming soon' ? 'Coming Soon' : WINDOW_LABELS[activeWindow]}`;
 
   // Per-route SEO metadata
   useEffect(() => {
     const title = `${heading} — Release Dates & Countdowns | WatchVerse`;
-    const desc = `Browse upcoming ${typeLabel.toLowerCase()} ${WINDOW_LABELS[window]} with release dates, posters and countdowns. Get an alert before a ${type === 'movies' ? 'movie' : 'series'} releases — free on WatchVerse.`;
+    const desc = `Browse upcoming ${typeLabel.toLowerCase()} ${WINDOW_LABELS[activeWindow]} with release dates, posters and countdowns. Get an alert before a ${type === 'movies' ? 'movie' : 'series'} releases — free on WatchVerse.`;
     document.title = title;
     document.querySelector('meta[name="description"]')?.setAttribute('content', desc);
     window.scrollTo(0, 0);
-  }, [heading, type, typeLabel, window]);
+  }, [heading, type, typeLabel, activeWindow]);
 
   // JSON-LD ItemList so search engines see the release data
   useEffect(() => {
@@ -118,7 +118,7 @@ export default function Releases() {
   const fetchItems = useCallback(async (targetPage: number, reset: boolean) => {
     setLoading(true);
     try {
-      const data = await tmdbApi.discoverUpcomingPublic(type === 'movies' ? 'movie' : 'series', window, targetPage);
+      const data = await tmdbApi.discoverUpcomingPublic(type === 'movies' ? 'movie' : 'series', activeWindow, targetPage);
       const results: ReleaseItem[] = data.results || [];
       setTotalPages(Math.min(data.total_pages || 1, 5));
       setItems(prev => (reset ? results : [...prev, ...results]));
@@ -127,7 +127,7 @@ export default function Releases() {
     } finally {
       setLoading(false);
     }
-  }, [type, window]);
+  }, [type, activeWindow]);
 
   useEffect(() => {
     setPage(1);
@@ -232,7 +232,7 @@ export default function Releases() {
               key={w.key}
               onClick={() => setWindow(w.key)}
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm border transition-all ${
-                window === w.key
+                activeWindow === w.key
                   ? 'bg-primary/15 border-primary/40 text-primary'
                   : 'border-border/50 text-muted-foreground hover:border-primary/30 hover:text-foreground'
               }`}
@@ -252,7 +252,7 @@ export default function Releases() {
           </div>
         ) : grid.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            No releases found for this window — try a wider one.
+            No releases found for this activeWindow — try a wider one.
           </div>
         ) : (
           <>
