@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 import { Bell, Calendar, Search, Star, Gamepad2, Film, Tv, Mail, User, Sparkles, Zap, Heart, Chrome, Eye, Users, TrendingUp, Globe, CheckCircle, Shield, ArrowRight } from 'lucide-react';
 import { toast as sonnerToast } from '@/components/ui/sonner';
 import heroRadar from '@/assets/hero-radar.jpg';
