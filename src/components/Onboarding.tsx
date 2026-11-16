@@ -38,7 +38,8 @@ const INDUSTRIES = ['Hollywood', 'Bollywood', 'Tollywood', 'Lollywood', 'Kollywo
 
 export const Onboarding: React.FC = () => {
   const [step, setStep] = useState(1);
-  const { authUser, setUser, markOnboardingComplete } = useUser();
+  const [saving, setSaving] = useState(false);
+  const { authUser, markOnboardingComplete } = useUser();
   const [formData, setFormData] = useState({
     name: authUser?.name || '',
     email: authUser?.email || '',
@@ -100,9 +101,9 @@ export const Onboarding: React.FC = () => {
       notifications_enabled: false,
       notification_list: []
     };
-    setUser(userData);
-    // Mark onboarding as completed for this account (saved to the database too)
-    markOnboardingComplete();
+    setSaving(true);
+    try { await markOnboardingComplete(userData); }
+    catch { toast.error('Could not save setup. Please try again.'); setSaving(false); return; }
 
     
     // Send welcome email via EmailJS
@@ -192,7 +193,7 @@ export const Onboarding: React.FC = () => {
                 <Label className="flex items-center gap-2 mb-3 text-base sm:text-lg"><Languages className="w-4 h-4 sm:w-5 sm:h-5"/>Languages</Label>
                 <div className="flex flex-wrap justify-center gap-2">
                   {LANGUAGES.map(lang => (
-                    <Badge key={lang} variant={formData.languages.includes(lang) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.languages.includes(lang) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(lang, 'languages')}>{lang}</Badge>
+                    <Button type="button" key={lang} aria-pressed={formData.languages.includes(lang)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.languages.includes(lang) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(lang, 'languages')}>{lang}</Button>
                   ))}
                 </div>
               </div>
@@ -200,7 +201,7 @@ export const Onboarding: React.FC = () => {
                 <Label className="flex items-center gap-2 mb-3 text-base sm:text-lg"><Star className="w-4 h-4 sm:w-5 sm:h-5"/>Industries</Label>
                 <div className="flex flex-wrap justify-center gap-2">
                   {INDUSTRIES.map(ind => (
-                    <Badge key={ind} variant={formData.industries.includes(ind) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.industries.includes(ind) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(ind, 'industries')}>{ind}</Badge>
+                    <Button type="button" key={ind} aria-pressed={formData.industries.includes(ind)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.industries.includes(ind) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(ind, 'industries')}>{ind}</Button>
                   ))}
                 </div>
               </div>
@@ -222,7 +223,7 @@ export const Onboarding: React.FC = () => {
                 </Button>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
-                {MOVIE_GENRES.map(genre => (<Badge key={genre} variant={formData.movieGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.movieGenres.includes(genre) ? 'bg-gradient-to-r from-neon-cyan to-electric-blue text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(genre, 'movieGenres')}>{genre}</Badge>))}
+                {MOVIE_GENRES.map(genre => (<Button type="button" key={genre} aria-pressed={formData.movieGenres.includes(genre)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.movieGenres.includes(genre) ? 'bg-gradient-to-r from-neon-cyan to-electric-blue text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(genre, 'movieGenres')}>{genre}</Button>))}
               </div>
             </CardContent>
           </Card>
@@ -242,7 +243,7 @@ export const Onboarding: React.FC = () => {
                 </Button>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
-                {SERIES_GENRES.map(genre => (<Badge key={genre} variant={formData.seriesGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.seriesGenres.includes(genre) ? 'bg-gradient-to-r from-neon-pink to-primary text-primary-foreground' : 'hover:border-neon-pink'}`} onClick={() => handleToggle(genre, 'seriesGenres')}>{genre}</Badge>))}
+                {SERIES_GENRES.map(genre => (<Button type="button" key={genre} aria-pressed={formData.seriesGenres.includes(genre)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.seriesGenres.includes(genre) ? 'bg-gradient-to-r from-neon-pink to-primary text-primary-foreground' : 'hover:border-neon-pink'}`} onClick={() => handleToggle(genre, 'seriesGenres')}>{genre}</Button>))}
               </div>
             </CardContent>
           </Card>
@@ -262,7 +263,7 @@ export const Onboarding: React.FC = () => {
                 </Button>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
-                {GAME_GENRES.map(genre => (<Badge key={genre} variant={formData.gameGenres.includes(genre) ? "default" : "outline"} className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.gameGenres.includes(genre) ? 'bg-gradient-to-r from-golden to-accent text-primary-foreground' : 'hover:border-golden'}`} onClick={() => handleToggle(genre, 'gameGenres')}>{genre}</Badge>))}
+                {GAME_GENRES.map(genre => (<Button type="button" key={genre} aria-pressed={formData.gameGenres.includes(genre)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.gameGenres.includes(genre) ? 'bg-gradient-to-r from-golden to-accent text-primary-foreground' : 'hover:border-golden'}`} onClick={() => handleToggle(genre, 'gameGenres')}>{genre}</Button>))}
               </div>
             </CardContent>
           </Card>
@@ -274,8 +275,9 @@ export const Onboarding: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary flex flex-col items-center justify-center p-3 sm:p-4">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
+      
       <div className="relative z-10 w-full max-w-4xl">
+        <p className="mb-3 text-center text-sm text-muted-foreground">Step {step} of 5</p>
         <div className="mb-6 sm:mb-8 flex justify-center">
           <div className="flex space-x-2">
             {[1, 2, 3, 4, 5].map(i => (<div key={i} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all ${i <= step ? 'bg-primary' : 'bg-muted'}`} />))}
@@ -284,8 +286,8 @@ export const Onboarding: React.FC = () => {
         {renderStep()}
         <div className="mt-6 sm:mt-8 flex justify-center space-x-3 sm:space-x-4">
           {step > 1 && (<Button variant="outline" onClick={() => setStep(step - 1)} className="border-primary/20 hover:border-primary text-sm">Back</Button>)}
-          <Button onClick={step === 5 ? handleComplete : handleNext} disabled={!canProceed()} className="bg-gradient-to-r from-primary to-neon-pink hover:shadow-lg hover:shadow-primary/25 transition-all text-sm">
-            {step === 5 ? (<><Rocket className="w-4 h-4 mr-2" />Complete Setup</>) : ('Next')}
+          <Button onClick={step === 5 ? handleComplete : handleNext} disabled={saving || !canProceed()} className="bg-gradient-to-r from-primary to-neon-pink hover:shadow-lg hover:shadow-primary/25 transition-all text-sm">
+            {step === 5 ? (<><Rocket className="w-4 h-4 mr-2" />Complete Setup</>) : ('Continue')}
           </Button>
         </div>
       </div>

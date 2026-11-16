@@ -52,18 +52,23 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
     <Card 
       className="group overflow-hidden bg-card/50 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow cursor-pointer"
       onClick={onClick}
+      onKeyDown={e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick(); } }}
+      tabIndex={0}
+      role="button"
+      aria-label={`View ${title}`}
     >
       <div className="aspect-[2/3] relative overflow-hidden">
         <img
           src={posterUrl}
           alt={title}
+          loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
       </div>
 
       <CardContent className="p-0">
-        <div className="p-4 space-y-3">
+        <div className="p-2 sm:p-3 space-y-3">
           <div className="flex items-start justify-between">
             <h3 className="font-semibold text-sm line-clamp-2 flex-1">{title}</h3>
             {isUpcoming && (
@@ -71,13 +76,15 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0 ml-2"
+                aria-label={isNotificationEnabled ? `Unsave ${title}` : `Save ${title}`}
+                title={isNotificationEnabled ? "Unsave release" : "Save release"}
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleNotification(e);
                 }}
               >
                 {isNotificationEnabled ? 
-                  <Check className="h-4 w-4 text-green-500" /> : 
+                  <Check className="h-4 w-4 text-success" /> : 
                   <Plus className="h-4 w-4" />
                 }
               </Button>
@@ -88,7 +95,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
             <Calendar className="h-3 w-3" />
             <span>{tmdbApi.formatDate(releaseDate)}</span>
             <div className="flex items-center gap-1 ml-auto">
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+              <Star className="h-3 w-3 fill-golden text-golden" />
               <span>{item.vote_average.toFixed(1)}</span>
             </div>
           </div>

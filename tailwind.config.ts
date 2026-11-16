@@ -19,7 +19,10 @@ export default {
 		},
 		extend: {
 			colors: {
-				border: 'hsl(var(--border))',
+				'cinema-foreground': 'hsl(var(--cinema-foreground))',
+                'cinema-background': 'hsl(var(--cinema-background))',
+                success: 'hsl(var(--success))',
+                border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',

@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { Bell, Calendar, Search, Star, Gamepad2, Film, Tv, Mail, User, Sparkles, Zap, Heart, Chrome, Eye, Users, TrendingUp, Globe, CheckCircle, Shield, ArrowRight } from 'lucide-react';
 import { toast as sonnerToast } from '@/components/ui/sonner';
-import heroRadar from '@/assets/hero-radar.jpg';
+import cinemaImage from '@/assets/watchverse-cinema.jpg';
 import watchverseLogo from '@/assets/watchverse-logo.png';
 import { SignupPopup } from '@/components/SignupPopup';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -21,16 +21,16 @@ const GameNotifyForm = () => {
   const [gameSubmitted, setGameSubmitted] = useState(false);
 
   const handleGameNotify = async () => {
-    if (!gameEmail) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gameEmail.trim())) { sonnerToast.error('Enter a valid email address.'); return; }
     setGameSubmitting(true);
     try {
-      const { error } = await supabase.from('notification_subscribers').upsert({
-        email: gameEmail,
+      const { error } = await supabase.from('notification_subscribers').insert({
+        email: gameEmail.trim().toLowerCase(),
         name: null,
         is_active: true,
         notification_type: 'games',
-      }, { onConflict: 'email' });
-      if (error) throw error;
+      });
+      if (error && error.code !== '23505') throw error;
       setGameSubmitted(true);
       sonnerToast.success('You\'ll be notified when games launch! 🎮');
     } catch {
@@ -44,9 +44,9 @@ const GameNotifyForm = () => {
     <div className="mt-8 flex flex-col items-center gap-3">
       <p className="text-sm text-muted-foreground">Be the first to know when we launch</p>
       {gameSubmitted ? (
-        <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-green-500/20 border border-green-500/30">
-          <CheckCircle className="h-4 w-4 text-green-500" />
-          <span className="text-sm font-medium text-green-400">You're on the list! 🎉</span>
+        <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-success/10 border border-success/30">
+          <CheckCircle className="h-4 w-4 text-success" />
+          <span className="text-sm font-medium text-success">You're on the list! 🎉</span>
         </div>
       ) : (
         <div className="flex items-center gap-2 w-full max-w-sm">
@@ -72,7 +72,7 @@ const GameNotifyForm = () => {
 };
 
 const Landing = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(false);
   const [authData, setAuthData] = useState({
     name: '',
     email: '',
@@ -100,88 +100,12 @@ const Landing = () => {
       });
     };
 
-    const fetchStats = async () => {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const { count: liveCount } = await supabase
-        .from('site_visits')
-        .select('visitor_id', { count: 'exact', head: true })
-        .gte('visited_at', fiveMinutesAgo);
-      
-      const { data: uniqueVisitors } = await supabase
-        .from('site_visits')
-        .select('visitor_id')
-        .limit(1000);
-      
-      const uniqueSet = new Set(uniqueVisitors?.map(v => v.visitor_id) || []);
-      
-      const { count: totalCount } = await supabase
-        .from('site_visits')
-        .select('*', { count: 'exact', head: true });
-
-      setLiveVisitors(Math.max(liveCount || 1, 1));
-      setTotalUsers(uniqueSet.size || 1);
-      setTotalVisits(totalCount || 1);
-    };
-
-    trackVisit();
-    fetchStats();
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
+    void trackVisit();
   }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        clearUser();
-      } else if (session) {
-        const email = session.user.email || '';
-        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
-        
-        const lastLoginKey = `radar-last-login-${email}`;
-        const previousLogin = localStorage.getItem(lastLoginKey);
-        const hasPrefs = localStorage.getItem(`radar-user-${email}`) || localStorage.getItem('radar-user');
-        const onboardingCompleted = localStorage.getItem(`watchverse-onboarded-${email}`) === 'true';
-        
-        setAuthUser({
-          name,
-          email,
-          isAuthenticated: true
-        });
-        
-        if (previousLogin && hasPrefs && onboardingCompleted) {
-          const lastDate = new Date(previousLogin);
-          const formattedDate = lastDate.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          
-          toast({
-            title: `Welcome back, ${name}! 👋`,
-            description: `Last login: ${formattedDate}`,
-          });
-        }
-        
-        localStorage.setItem(lastLoginKey, new Date().toISOString());
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        const email = session.user.email || '';
-        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
-        
-        setAuthUser({
-          name,
-          email,
-          isAuthenticated: true
-        });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [setAuthUser, toast]);
+    if (window.location.hash === '#auth-section') window.setTimeout(scrollToSignup, 100);
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -265,6 +189,7 @@ const Landing = () => {
   };
 
   const scrollToSignup = () => {
+    setIsLogin(false);
     const authSection = document.querySelector('#auth-section');
     if (authSection) {
       authSection.scrollIntoView({ 
@@ -274,65 +199,20 @@ const Landing = () => {
     }
   };
 
-  const features = [
-    {
-      icon: <Bell className="h-6 w-6 sm:h-8 sm:w-8 text-neon-purple drop-shadow-lg" />,
-      title: "Smart Notifications",
-      description: "Get personalized alerts for upcoming releases based on your interests",
-      gradient: "from-neon-purple to-neon-pink"
-    },
-    {
-      icon: <Search className="h-6 w-6 sm:h-8 sm:w-8 text-electric-blue drop-shadow-lg" />,
-      title: "Advanced Search",
-      description: "Find exactly what you're looking for with our powerful search filters",
-      gradient: "from-electric-blue to-neon-cyan"
-    },
-    {
-      icon: <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-golden drop-shadow-lg" />,
-      title: "Release Tracking",
-      description: "Never miss a release date with our comprehensive tracking system",
-      gradient: "from-golden to-accent"
-    },
-    {
-      icon: <Star className="h-6 w-6 sm:h-8 sm:w-8 text-neon-pink drop-shadow-lg" />,
-      title: "Personalized Feed",
-      description: "Content curated specifically for your tastes and preferences",
-      gradient: "from-neon-pink to-neon-purple"
-    }
-  ];
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-dark">
+    <div className="min-h-screen bg-background">
       {/* Signup Popup */}
       <SignupPopup onSignup={scrollToSignup} />
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-neon-purple/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-electric-blue/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-neon-cyan/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
-      </div>
-
       {/* Navbar - Fixed mobile overlap */}
       <nav className="relative z-20 border-b border-primary/10 bg-card/30 backdrop-blur-xl">
         <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <img src={watchverseLogo} alt="WatchVerse Logo" className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex-shrink-0" />
-            <span className="text-base sm:text-xl font-bold bg-gradient-to-r from-neon-purple via-neon-pink to-electric-blue bg-clip-text text-transparent truncate">
+            <span className="text-base sm:text-xl font-bold text-foreground truncate">
               WatchVerse
             </span>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground bg-card/50 rounded-full px-3 py-1.5 border border-primary/10">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              <span>{liveVisitors} online</span>
-            </div>
             <ThemeToggle />
             <Button asChild variant="ghost" size="sm" className="text-xs sm:text-sm px-2 sm:px-3 hover:bg-primary/10">
               <Link to="/releases">
@@ -340,7 +220,7 @@ const Landing = () => {
                 <span className="hidden sm:inline">Releases</span>
               </Link>
             </Button>
-            <Button onClick={scrollToSignup} size="sm" className="bg-gradient-primary hover:shadow-glow transition-all text-xs sm:text-sm px-3 sm:px-4">
+            <Button onClick={scrollToSignup} size="sm" className="bg-primary hover:bg-primary/90 transition-all text-xs sm:text-sm px-3 sm:px-4">
               <ArrowRight className="h-4 w-4 mr-1 sm:hidden" />
               <span className="hidden sm:inline">Get Started</span>
               <span className="sm:hidden">Join</span>
@@ -349,235 +229,37 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/10 via-transparent to-electric-blue/10" />
-        <div className="container mx-auto px-4 py-8 sm:py-12 lg:py-20 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
-            <div className="space-y-5 lg:space-y-8 order-2 lg:order-1">
-              <div className="space-y-4 sm:space-y-6">
-                <Badge variant="secondary" 
-                       className="w-fit bg-gradient-primary text-primary-foreground border-0 shadow-glow text-xs sm:text-sm">
-                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                  Never Miss Another Release
-                </Badge>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight">
-                  <span className="bg-gradient-to-r from-neon-purple via-neon-pink to-electric-blue bg-clip-text text-transparent">
-                    Watch
-                  </span>
-                  <span className="bg-gradient-to-r from-electric-blue to-neon-cyan bg-clip-text text-transparent">
-                    Verse
-                  </span>
-                </h1>
-                <p className="text-sm sm:text-base lg:text-xl text-muted-foreground leading-relaxed">
-                  Your personal entertainment universe. Track upcoming movies, TV series, and games with 
-                  <span className="text-neon-cyan font-semibold"> AI-powered recommendations</span> and 
-                  <span className="text-neon-pink font-semibold"> smart notifications</span>.
-                </p>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 sm:gap-4">
-                <div className="flex items-center gap-1.5 sm:gap-3 bg-card/50 backdrop-blur-sm rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 border border-primary/30">
-                  <Film className="h-3.5 sm:h-5 w-3.5 sm:w-5 text-neon-purple" />
-                  <span className="text-xs sm:text-sm font-medium">Movies</span>
-                </div>
-                <div className="flex items-center gap-1.5 sm:gap-3 bg-card/50 backdrop-blur-sm rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 border border-electric-blue/30">
-                  <Tv className="h-3.5 sm:h-5 w-3.5 sm:w-5 text-electric-blue" />
-                  <span className="text-xs sm:text-sm font-medium">TV Series</span>
-                </div>
-                <div className="flex items-center gap-1.5 sm:gap-3 bg-card/50 backdrop-blur-sm rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 border border-golden/30">
-                  <Gamepad2 className="h-3.5 sm:h-5 w-3.5 sm:w-5 text-golden" />
-                  <span className="text-xs sm:text-sm font-medium">Games (Soon)</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  size="lg" 
-                  onClick={scrollToSignup}
-                  className="bg-gradient-primary hover:shadow-glow transition-all duration-300 transform hover:scale-105 w-full sm:w-auto"
-                >
-                  <Zap className="h-5 w-5 mr-2" />
-                  Get Started Free
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={scrollToSignup}
-                  className="border-primary/50 hover:border-primary hover:bg-primary/10 transition-all duration-300 w-full sm:w-auto"
-                >
-                  Start Your Journey
-                </Button>
-              </div>
-            </div>
-            
-            <div className="relative group order-1 lg:order-2">
-              <div className="absolute -inset-1 bg-gradient-primary rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-              <img 
-                src={heroRadar} 
-                alt="WatchVerse Dashboard Preview" 
-                className="relative rounded-lg shadow-card border border-primary/20 w-full h-auto"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent rounded-lg" />
-            </div>
+      <section className="cinema-hero">
+        <img src={cinemaImage} alt="Red velvet seats in a modern cinema" width={1600} height={912} />
+        <div className="container mx-auto px-5 sm:px-8 cinema-copy">
+          <p className="section-eyebrow mb-5">YOUR NEXT OBSESSION STARTS HERE</p>
+          <h1>WatchVerse<span className="text-primary">.</span></h1>
+          <p className="mt-5 text-lg text-cinema-foreground/80">The anticipation is part of the story. Discover upcoming movies and series. Keep the releases you can't wait for in one place.</p>
+          <div className="flex flex-wrap gap-3 mt-8">
+            <Button asChild size="lg"><Link to="/releases">Explore releases <ArrowRight /></Link></Button>
+            <Button size="lg" variant="outline" onClick={scrollToSignup} className="border-cinema-foreground/30 bg-cinema-background/40 text-cinema-foreground hover:bg-cinema-foreground/10 hover:text-cinema-foreground">Get Started Free</Button>
+          </div>
+          <div className="flex flex-wrap gap-5 mt-9 text-sm text-cinema-foreground/70"><span className="flex items-center gap-2"><Film className="w-4 h-4 text-primary" />Movies</span><span className="flex items-center gap-2"><Tv className="w-4 h-4 text-neon-cyan" />Series</span><span className="flex items-center gap-2"><Gamepad2 className="w-4 h-4 text-golden" />Games · coming soon</span></div>
+        </div>
+      </section>
+      <section className="border-b border-border py-9 sm:py-12">
+        <div className="container mx-auto px-5 sm:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div><p className="section-eyebrow mb-2">THE RELEASE CALENDAR</p><h2 className="text-2xl sm:text-3xl font-semibold">Something worth waiting for.</h2><p className="text-muted-foreground mt-2">Movies and series. Today, next week, and beyond.</p></div>
+          <Button asChild variant="outline"><Link to="/releases/movies">What's coming next <ArrowRight /></Link></Button>
+        </div>
+      </section>
+      <section className="py-14 sm:py-20">
+        <div className="container mx-auto px-5 sm:px-8">
+          <p className="section-eyebrow mb-3">MADE FOR YOUR TASTE</p><h2 className="text-3xl font-semibold mb-10">Less searching. More anticipation.</h2>
+          <div className="grid sm:grid-cols-3 gap-8 sm:gap-10">
+            {[{icon: Film, title: 'A calendar, not a catalogue', body: 'Fresh movie and series dates, without the already-released clutter.'}, {icon: Heart, title: 'Your own shortlist', body: 'Save the titles you care about, with your preferences kept in your account.'}, {icon: Search, title: 'Find your kind of story', body: 'Discover upcoming releases by genre, language, and country.'}].map(({icon: Icon, title, body}) => <div key={title} className="border-t border-border pt-6"><Icon className="h-6 w-6 text-neon-cyan mb-5" /><h3 className="font-semibold text-lg mb-2">{title}</h3><p className="text-muted-foreground text-sm leading-relaxed">{body}</p></div>)}
           </div>
         </div>
       </section>
-
-      {/* Live Stats Section (hidden until numbers are meaningful) */}
-      {false && (
-      <section className="py-8 sm:py-16 relative">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-3xl font-bold mb-2">
-              <span className="bg-gradient-to-r from-neon-cyan to-electric-blue bg-clip-text text-transparent">
-                Join Our Growing Community
-              </span>
-            </h2>
-            <p className="text-sm text-muted-foreground">Real-time platform stats</p>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 max-w-4xl mx-auto">
-            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20">
-              <CardContent className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-2 sm:px-6">
-                <p className="text-xl sm:text-3xl font-bold text-foreground">{formatNumber(liveVisitors)}</p>
-                <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Live Visitors</p>
-              </CardContent>
-            </Card>
-            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20">
-              <CardContent className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-2 sm:px-6">
-                <Users className="h-5 w-5 mx-auto text-neon-purple" />
-                <p className="text-xl sm:text-3xl font-bold text-foreground">{formatNumber(totalUsers)}</p>
-                <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Unique Visitors</p>
-              </CardContent>
-            </Card>
-            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20">
-              <CardContent className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-2 sm:px-6">
-                <Eye className="h-5 w-5 mx-auto text-electric-blue" />
-                <p className="text-xl sm:text-3xl font-bold text-foreground">{formatNumber(totalVisits)}</p>
-                <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Total Visits</p>
-              </CardContent>
-            </Card>
-            <Card className="text-center bg-card/60 backdrop-blur-sm border-primary/20">
-              <CardContent className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-2 sm:px-6">
-                <Globe className="h-5 w-5 mx-auto text-golden" />
-                <p className="text-xl sm:text-3xl font-bold text-foreground">24/7</p>
-                <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Always Online</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* Features Section */}
-      <section className="py-12 sm:py-20 relative">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-6">
-              <span className="bg-gradient-to-r from-neon-purple to-electric-blue bg-clip-text text-transparent">
-                Why Choose WatchVerse?
-              </span>
-            </h2>
-            <p className="text-sm sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
-              Discover the cutting-edge features that make tracking your entertainment 
-              <span className="text-neon-cyan"> effortless</span> and 
-              <span className="text-neon-pink"> exciting</span>
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} 
-                    className="text-center group hover:shadow-glow transition-all duration-500 bg-card/80 backdrop-blur-sm border-2 border-primary/20 hover:border-primary/60 transform hover:scale-105">
-                <CardHeader className="pb-2 sm:pb-4 px-3 sm:px-6">
-                  <div className={`mx-auto mb-2 sm:mb-4 p-2.5 sm:p-4 bg-gradient-to-br ${feature.gradient} rounded-xl sm:rounded-2xl w-fit shadow-neon group-hover:shadow-glow transition-all duration-300 border border-primary/30`}>
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-sm sm:text-xl group-hover:text-primary transition-colors leading-tight">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 px-3 sm:px-6">
-                  <CardDescription className="text-xs sm:text-base leading-relaxed">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Games Coming Soon Section */}
-      <section className="py-12 sm:py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-golden/5 to-neon-pink/5 blur-3xl"></div>
-        
-        <div className="absolute inset-0 pointer-events-none hidden sm:block">
-          <div className="absolute top-10 left-[10%] text-3xl animate-bounce opacity-20" style={{ animationDuration: '3s' }}>🎮</div>
-          <div className="absolute top-20 right-[15%] text-2xl animate-bounce opacity-15" style={{ animationDuration: '4s', animationDelay: '1s' }}>🕹️</div>
-          <div className="absolute bottom-20 left-[20%] text-3xl animate-bounce opacity-20" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🏆</div>
-          <div className="absolute bottom-10 right-[25%] text-2xl animate-bounce opacity-15" style={{ animationDuration: '4.5s', animationDelay: '2s' }}>⚡</div>
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-5xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8 bg-card/80 backdrop-blur-sm rounded-full px-4 sm:px-6 py-2 sm:py-3 border border-golden/30">
-              <Gamepad2 className="h-6 w-6 sm:h-8 sm:w-8 text-golden animate-pulse" />
-              <Badge variant="outline" 
-                     className="text-sm sm:text-lg px-3 sm:px-6 py-1 sm:py-2 bg-gradient-to-r from-golden to-neon-pink text-transparent bg-clip-text border-golden/50 animate-pulse">
-                Coming Soon
-              </Badge>
-            </div>
-            
-            <h2 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-6 sm:mb-8">
-              <span className="bg-gradient-to-r from-golden via-neon-pink to-neon-purple bg-clip-text text-transparent drop-shadow-lg">
-                Games Tracking Is Almost Here!
-              </span>
-            </h2>
-            
-            {false && (
-            <div className="flex justify-center gap-3 sm:gap-8 mb-8 sm:mb-10">
-              {['Days', 'Hours', 'Min', 'Sec'].map((label, i) => (
-                <div key={label} className="flex flex-col items-center">
-                  <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-card/80 backdrop-blur-sm border border-golden/30 flex items-center justify-center shadow-lg">
-                    <span className="text-xl sm:text-3xl font-bold text-golden animate-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
-                      ??
-                    </span>
-                  </div>
-                  <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 sm:mt-2">{label}</span>
-                </div>
-              ))}
-            </div>
-            )}
-            
-            <p className="text-sm sm:text-xl text-muted-foreground mb-8 sm:mb-12 leading-relaxed max-w-3xl mx-auto px-2">
-              We're crafting the ultimate gaming experience tracker. Soon you'll discover, track, and get notified about 
-              <span className="text-golden font-semibold"> every game release</span> that matches your taste.
-            </p>
-            
-            <div className="bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm rounded-2xl p-4 sm:p-8 border border-golden/20 shadow-glow">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                {[
-                  { icon: '🖥️', label: 'PC Games' },
-                  { icon: '🎮', label: 'Console' },
-                  { icon: '📱', label: 'Mobile' },
-                  { icon: '💎', label: 'Indie' },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="group relative px-3 sm:px-4 py-4 sm:py-6 rounded-xl border border-golden/30 bg-gradient-to-b from-golden/10 to-transparent hover:from-golden/20 transition-all duration-500 hover:scale-105 cursor-pointer"
-                  >
-                    <div className="text-2xl sm:text-3xl mb-2 sm:mb-3 group-hover:scale-125 transition-transform duration-300">
-                      {item.icon}
-                    </div>
-                    <span className="text-xs sm:text-sm font-medium text-golden">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-              
-              <GameNotifyForm />
-            </div>
-          </div>
+      <section className="border-y border-border bg-muted/30 py-12">
+        <div className="container mx-auto px-5 sm:px-8 grid md:grid-cols-2 gap-8 items-center">
+          <div><p className="section-eyebrow mb-3">NEXT CHAPTER</p><h2 className="text-3xl font-semibold flex items-center gap-3"><Gamepad2 className="text-golden" />Games are joining the verse.</h2><p className="mt-3 text-muted-foreground">PC, console, and indie releases. Join the launch list.</p></div>
+          <GameNotifyForm />
         </div>
       </section>
 
@@ -591,18 +273,18 @@ const Landing = () => {
                 <div className="mx-auto mb-3">
                   <img src={watchverseLogo} alt="WatchVerse" className="h-14 w-14 sm:h-16 sm:w-16 mx-auto rounded-xl" />
                 </div>
-                <CardTitle className="text-2xl sm:text-3xl bg-gradient-to-r from-neon-purple to-electric-blue bg-clip-text text-transparent">
+                <CardTitle className="text-2xl sm:text-3xl text-foreground">
                   {isLogin ? 'Welcome Back' : 'Join WatchVerse'}
                 </CardTitle>
                 <CardDescription className="text-sm sm:text-lg">
-                  {isLogin ? 'Sign in to continue your entertainment journey' : 'Start tracking your favorite content today'}
+                  {isLogin ? 'Your releases, right where you left them.' : 'A shortlist that follows you. Free to join.'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5 sm:space-y-6">
                 <Button
                   onClick={handleGoogleAuth}
                   disabled={loading}
-                  className="w-full bg-white text-gray-900 hover:bg-gray-100 border border-gray-300 shadow-sm"
+                  variant="outline" className="w-full"
                   size="lg"
                 >
                   <Chrome className="h-5 w-5 mr-3" />
@@ -668,13 +350,13 @@ const Landing = () => {
                   
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300" 
+                    className="w-full bg-primary hover:bg-primary/90 transition-all duration-300" 
                     size="lg"
                     disabled={loading}
                   >
                     {loading ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                         {isLogin ? 'Signing In...' : 'Creating Account...'}
                       </div>
                     ) : (
@@ -703,19 +385,19 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 sm:py-12 border-t border-primary/20 bg-gradient-to-r from-card/50 to-card/30 backdrop-blur-sm">
+      <footer className="py-8 sm:py-12 border-t border-primary/20 bg-background backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
             {/* Brand */}
             <div className="text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
                 <img src={watchverseLogo} alt="WatchVerse" className="h-8 w-8 rounded-lg" />
-                <h3 className="text-lg font-bold bg-gradient-to-r from-neon-purple to-electric-blue bg-clip-text text-transparent">
+                <h3 className="text-lg font-bold text-foreground">
                   WatchVerse
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Your personal entertainment universe for tracking movies, series & games.
+                Upcoming stories. One personal shortlist.
               </p>
             </div>
             
@@ -723,10 +405,10 @@ const Landing = () => {
             <div className="text-center">
               <h4 className="font-semibold text-foreground mb-3 text-sm">Quick Links</h4>
               <div className="space-y-2">
-                <button onClick={scrollToSignup} className="block mx-auto text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Button variant="link" onClick={scrollToSignup} className="text-muted-foreground">
                   Sign Up / Login
-                </button>
-                <a href="mailto:watchverse.contact@gmail.com" className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                </Button>
+                <a href="mailto:watchverse@trynoryvex.com" className="block text-sm text-muted-foreground hover:text-primary transition-colors">
                   Contact Us
                 </a>
               </div>
@@ -738,10 +420,10 @@ const Landing = () => {
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground flex items-center justify-center sm:justify-end gap-1.5">
                   <Shield className="h-3.5 w-3.5" />
-                  Privacy Policy
+                  Your account, your preferences
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  We respect your data & privacy.
+                  Saved preferences are private to your account.
                 </p>
               </div>
             </div>
@@ -752,7 +434,7 @@ const Landing = () => {
               Built with <Heart className="inline h-3.5 w-3.5 text-neon-pink" /> for entertainment enthusiasts
             </p>
             <p className="text-xs text-muted-foreground/70 mt-1">
-              © {new Date().getFullYear()} WatchVerse. All rights reserved.
+              © {new Date().getFullYear()} WatchVerse · A product of Trynoryvex.
             </p>
           </div>
         </div>

@@ -29,7 +29,8 @@ export const NotificationPrompt: React.FC<NotificationPromptProps> = ({ open, on
     
     if (success) {
       if (user) {
-        setUser({ ...user, notifications_enabled: true });
+        try { await setUser({ ...user, notifications_enabled: true }); }
+        catch { toast.error('Could not save notification preferences. Please try again.'); return; }
       }
 
       // Save subscriber to database
@@ -58,7 +59,7 @@ export const NotificationPrompt: React.FC<NotificationPromptProps> = ({ open, on
       }
 
       toast.success('Notifications enabled!', {
-        description: 'You\'ll get alerts even when the app is closed.',
+        description: 'Browser permission granted. Release checks run when you open WatchVerse.',
       });
     } else {
       toast.error('Permission denied', {

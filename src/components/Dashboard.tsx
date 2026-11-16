@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/UserContext';
-import { Settings, Star, TrendingUp, Loader2, Search, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Bookmark, CalendarDays, Trash2, Settings, Star, TrendingUp, Loader2, Search, RefreshCw, AlertTriangle } from 'lucide-react';
 import watchverseLogo from '@/assets/watchverse-logo.png';
 import { ContentCard } from '@/components/ContentCard';
 import { ContentDetailsDialog } from '@/components/ContentDetailsDialog';
@@ -39,6 +39,8 @@ export const Dashboard: React.FC = () => {
       dateRange: 'all',
     };
   });
+  const requestId = useRef(0);
+  const [showSaved, setShowSaved] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [oldContentAlert, setOldContentAlert] = useState<string | null>(null);
@@ -47,6 +49,7 @@ export const Dashboard: React.FC = () => {
   const fetchContent = useCallback(async (currentFilters: typeof filters, query: string = '', isResync: boolean = false, page: number = 1) => {
     if (!user) return;
 
+    const request = ++requestId.current;
     try {
       setLoading(true);
       setIsSearching(!!query);
@@ -92,8 +95,10 @@ export const Dashboard: React.FC = () => {
         seriesData = seriesResult;
       }
 
-      setMovies(moviesData.results?.slice(0, 12) || []);
-      setSeries(seriesData.results?.slice(0, 12) || []);
+      if (request !== requestId.current) return;
+      const today = new Date().toISOString().split('T')[0];
+      setMovies((moviesData.results || []).filter((item: Movie) => item.release_date >= today).slice(0, 12));
+      setSeries((seriesData.results || []).filter((item: TVShow) => item.first_air_date >= today).slice(0, 12));
       
       if (isResync) {
         toast.success("Content refreshed with new upcoming releases!");
@@ -102,13 +107,12 @@ export const Dashboard: React.FC = () => {
       console.error('Error fetching content:', error);
       toast.error("Failed to fetch content. Please try again later.");
     } finally {
-      setLoading(false);
-      setIsSearching(false);
+      if (request === requestId.current) { setLoading(false); setIsSearching(false); }
     }
   }, [user]);
 
   const checkAndSendReleaseNotifications = useCallback(() => {
-    if (!user || !user.notifications_enabled || user.notification_list.length === 0) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted' || !user || !user.notifications_enabled || user.notification_list.length === 0) return;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -130,25 +134,26 @@ export const Dashboard: React.FC = () => {
     });
 
     if (releasedItems.length > 0) {
-      setUser({ ...user, notification_list: updatedNotificationList });
+      void setUser({ ...user, notification_list: updatedNotificationList }).catch(() => toast.error('Could not update saved releases.'));
       toast.info(`${releasedItems.length} item(s) on your watchlist have been released!`);
     }
   }, [user, setUser]);
 
   useEffect(() => {
     if (user) {
-      fetchContent(filters, searchQuery, false, 1);
+      const contentTimer = window.setTimeout(() => fetchContent(filters, searchQuery, false, currentPage), 350);
       checkAndSendReleaseNotifications();
 
       if ('Notification' in window && Notification.permission === 'default') {
         const dismissed = sessionStorage.getItem('notificationPromptDismissed');
         if (!dismissed) {
           const timer = setTimeout(() => setShowNotificationPrompt(true), 3000);
-          return () => clearTimeout(timer);
+          return () => { clearTimeout(timer); clearTimeout(contentTimer); };
         }
       }
+      return () => clearTimeout(contentTimer);
     }
-  }, [user, checkAndSendReleaseNotifications, filters, searchQuery]);
+  }, [user, checkAndSendReleaseNotifications, filters, searchQuery, currentPage]);
 
   const handleCardClick = (item: Movie | TVShow, type: 'movie' | 'series') => {
     setSelectedItem({ item, type });
@@ -163,22 +168,22 @@ export const Dashboard: React.FC = () => {
     setFilters(newFilters);
     setCurrentPage(1);
     localStorage.setItem('radar-user-filters', JSON.stringify(newFilters));
-    fetchContent(newFilters, searchQuery, false, 1);
+
   };
 
   const handleResync = () => {
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
-    fetchContent(filters, searchQuery, true, nextPage);
+
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
-    fetchContent(filters, query, false, 1);
+
   };
 
-  const handleToggleNotification = (e: React.MouseEvent, item: Movie | TVShow, type: 'movie' | 'series') => {
+  const handleToggleNotification = async (e: React.MouseEvent, item: Movie | TVShow, type: 'movie' | 'series') => {
     e.stopPropagation();
     if (!user) return;
 
@@ -187,12 +192,8 @@ export const Dashboard: React.FC = () => {
 
     if (isInList) {
       newNotificationList = user.notification_list.filter(i => !(i.id === item.id && i.type === type));
-      toast.info("Removed from your notification list.");
+      toast.info("Removed from saved releases.");
     } else {
-      if (!user.notifications_enabled) {
-        toast.error("Enable notifications in settings first!");
-        return;
-      }
       const newItem = {
         id: item.id,
         type: type,
@@ -201,9 +202,9 @@ export const Dashboard: React.FC = () => {
         poster_path: item.poster_path,
       };
       newNotificationList = [...user.notification_list, newItem];
-      toast.success("Added to your notification list!");
+      toast.success("Release saved!");
     }
-    setUser({ ...user, notification_list: newNotificationList });
+    try { await setUser({ ...user, notification_list: newNotificationList }); } catch { toast.error('Could not save the change. Try again.'); }
   };
 
   if (!user) return null;
@@ -221,7 +222,7 @@ export const Dashboard: React.FC = () => {
         open={!!selectedItem}
         onOpenChange={(open) => !open && setSelectedItem(null)}
       />
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
+      <div className="min-h-screen bg-background">
         <header className="border-b border-border/50 backdrop-blur-sm bg-card/20 sticky top-0 z-20">
           <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:space-x-3 min-w-0">
@@ -255,6 +256,8 @@ export const Dashboard: React.FC = () => {
         </header>
 
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          <div className="mb-8 flex flex-wrap justify-between items-end gap-4"><div><p className="section-eyebrow mb-2">YOUR WATCHVERSE</p><h2 className="text-3xl font-semibold">The next chapter.</h2><p className="text-muted-foreground mt-2">Upcoming stories picked for your taste.</p></div><div className="flex flex-wrap gap-2"><Button variant={showSaved ? 'default' : 'outline'} onClick={() => setShowSaved(!showSaved)}><Bookmark />Saved ({user.notification_list.length})</Button><Button variant="outline" onClick={() => navigate('/releases')}><CalendarDays />Calendar</Button></div></div>
+          {showSaved && <section className="border-y border-border py-6 mb-8"><h3 className="text-xl font-semibold mb-4">Saved releases</h3>{user.notification_list.length === 0 ? <p className="text-muted-foreground">No saved releases yet.</p> : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{[...user.notification_list].sort((a,b) => a.date.localeCompare(b.date)).map(item => <div key={`${item.type}-${item.id}`} className="flex gap-3 items-center"><img src={tmdbApi.getPosterUrl(item.poster_path)} alt={item.name} className="w-12 h-16 object-cover rounded-md" /><div className="min-w-0 flex-1"><p className="font-medium truncate">{item.name}</p><p className="text-xs text-muted-foreground">{tmdbApi.formatDate(item.date)}</p></div><Button size="icon" variant="ghost" aria-label={`Remove ${item.name}`} onClick={() => { void setUser({...user, notification_list: user.notification_list.filter(i => !(i.id === item.id && i.type === item.type))}).catch(() => toast.error('Could not remove release.')); }}><Trash2 /></Button></div>)}</div>}</section>}
           <DashboardFilters initialFilters={filters} onApplyFilters={handleApplyFilters} loading={loading} />
 
           <div className="mb-4 sm:mb-6">
@@ -274,8 +277,8 @@ export const Dashboard: React.FC = () => {
               </p>
             )}
             {oldContentAlert && (
-              <div className="max-w-md mx-auto mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                <div className="flex items-center gap-2 text-amber-600">
+              <div className="max-w-md mx-auto mt-3 p-3 bg-accent/10 border border-accent/20 rounded-lg">
+                <div className="flex items-center gap-2 text-accent-foreground">
                   <AlertTriangle className="w-4 h-4" />
                   <p className="text-sm font-medium">{oldContentAlert}</p>
                 </div>
@@ -284,7 +287,7 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="space-y-6 sm:space-y-8">
-            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+            <section className="border-t border-border pt-4">
               <CardHeader className="px-3 sm:px-6"><CardTitle className="flex items-center text-neon-cyan text-base sm:text-lg"><Star className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />Upcoming Movies</CardTitle><CardDescription className="text-xs sm:text-sm">{searchQuery ? `Search results for "${searchQuery}"` : 'Based on your movie preferences'}</CardDescription></CardHeader>
               <CardContent className="px-3 sm:px-6">
                 {loading ? (
@@ -306,9 +309,9 @@ export const Dashboard: React.FC = () => {
                   <div className="text-center text-muted-foreground py-8"><Search className="w-12 h-12 mx-auto mb-2 opacity-50" /><p className="text-sm">No upcoming movies found for your preferences.</p></div>
                 )}
               </CardContent>
-            </Card>
+            </section>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+            <section className="border-t border-border pt-4">
               <CardHeader className="px-3 sm:px-6"><CardTitle className="flex items-center text-neon-pink text-base sm:text-lg"><TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />Upcoming Series</CardTitle><CardDescription className="text-xs sm:text-sm">{searchQuery ? `Search results for "${searchQuery}"` : 'Based on your series preferences'}</CardDescription></CardHeader>
               <CardContent className="px-3 sm:px-6">
                 {loading ? (
@@ -330,7 +333,7 @@ export const Dashboard: React.FC = () => {
                   <div className="text-center text-muted-foreground py-8"><Search className="w-12 h-12 mx-auto mb-2 opacity-50" /><p className="text-sm">No upcoming series found for your preferences.</p></div>
                 )}
               </CardContent>
-            </Card>
+            </section>
           </div>
         </div>
       </div>

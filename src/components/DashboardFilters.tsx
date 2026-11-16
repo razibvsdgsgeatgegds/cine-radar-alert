@@ -73,14 +73,14 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ initialFilte
   const totalFilters = filters.languages.length + filters.industries.length;
 
   return (
-    <Card className="bg-card/50 backdrop-blur-sm border-primary/20 mb-8">
-      <CardHeader>
+    <section className="border-y border-border mb-6 py-4">
+      <CardHeader className="px-0 pt-0">
         <CardTitle className="flex items-center gap-2 text-lg">
           <SlidersHorizontal className="w-5 h-5" />
-          Filter Your Radar
+          Refine your feed
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap items-center gap-4">
+      <CardContent className="flex flex-wrap items-center gap-3 px-0 pb-0">
         <MultiSelectFilter
           title="Languages"
           options={LANGUAGES}
@@ -119,6 +119,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ initialFilte
             
          </CardFooter>
       )}
-    </Card>
+    </section>
   );
 };

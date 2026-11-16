@@ -64,11 +64,10 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
-    if (formData) {
-      setUser(formData);
-      toast.success('Settings saved successfully!');
-    }
+  const handleSave = async () => {
+    if (!formData) return;
+    try { await setUser(formData); toast.success('Settings saved successfully!'); }
+    catch { toast.error('Settings could not be saved. Please try again.'); }
   };
   
   const handleLogout = async () => {
@@ -78,8 +77,8 @@ const Settings: React.FC = () => {
     toast.info("You have been logged out.");
   };
 
-  const handleResetPreferences = () => {
-    resetPreferences();
+  const handleResetPreferences = async () => {
+    try { await resetPreferences(); } catch { toast.error('Could not reset preferences. Please try again.'); return; }
     toast.success('Preferences reset! Redirecting to onboarding...');
     navigate('/');
   };
@@ -116,7 +115,7 @@ const Settings: React.FC = () => {
           
           <div className="flex items-center gap-2">
             <SettingsIcon className="w-5 h-5 text-primary" />
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary to-[hsl(var(--neon-pink))] bg-clip-text text-transparent">
+            <h1 className="text-lg sm:text-xl font-bold bg-primary text-primary-foreground ">
               Settings
             </h1>
           </div>
@@ -130,8 +129,8 @@ const Settings: React.FC = () => {
         <div className="max-w-6xl mx-auto space-y-6">
           
           {/* Appearance Section */}
-          <Card className="overflow-hidden border-border/50 shadow-sm">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-[hsl(var(--neon-pink))]/5 border-b border-border/50">
+          <section className="overflow-hidden border-b border-border pb-6">
+            <CardHeader className="bg-background border-b border-border/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <Palette className="w-5 h-5 text-primary" />
@@ -142,7 +141,7 @@ const Settings: React.FC = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <Label className="text-base font-medium">Theme</Label>
@@ -153,14 +152,14 @@ const Settings: React.FC = () => {
                 <ThemeToggle />
               </div>
             </CardContent>
-          </Card>
+          </section>
 
           {/* Profile & Notifications Grid */}
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 sm:p-6 lg:grid-cols-2">
             
             {/* Profile Information */}
-            <Card className="overflow-hidden border-border/50 shadow-sm">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-[hsl(var(--neon-pink))]/5 border-b border-border/50">
+            <section className="overflow-hidden border-b border-border pb-6">
+              <CardHeader className="bg-background border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <User className="w-5 h-5 text-primary" />
@@ -171,7 +170,7 @@ const Settings: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-5">
+              <CardContent className="p-4 sm:p-6 space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-sm font-medium">Name</Label>
@@ -275,11 +274,11 @@ const Settings: React.FC = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </section>
 
             {/* Notifications Card */}
-            <Card className="overflow-hidden border-border/50 shadow-sm">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-[hsl(var(--neon-pink))]/5 border-b border-border/50">
+            <section className="overflow-hidden border-b border-border pb-6">
+              <CardHeader className="bg-background border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Bell className="w-5 h-5 text-primary" />
@@ -290,7 +289,7 @@ const Settings: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-5">
+              <CardContent className="p-4 sm:p-6 space-y-5">
                 <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
                   <div className="flex items-center justify-between gap-4">
                     <div className="space-y-1">
@@ -374,12 +373,12 @@ const Settings: React.FC = () => {
                   </ScrollArea>
                 </div>
               </CardContent>
-            </Card>
+            </section>
           </div>
 
           {/* Action Buttons */}
-          <Card className="border-border/50 shadow-sm">
-            <CardContent className="p-4 sm:p-6">
+          <section className="border-t border-border">
+            <CardContent className="p-4 sm:p-4 sm:p-6">
               <div className="flex flex-col gap-4">
                 {/* Reset Preferences Section */}
                 {!showResetConfirm ? (
@@ -438,7 +437,7 @@ const Settings: React.FC = () => {
                   </Button>
                   <Button 
                     onClick={handleSave} 
-                    className="bg-gradient-to-r from-primary to-[hsl(var(--neon-pink))] hover:opacity-90 transition-opacity sm:w-auto"
+                    className="bg-primary text-primary-foreground hover:opacity-90 transition-opacity sm:w-auto"
                   >
                     <Save className="w-4 h-4 mr-2" />
                     Save Changes
@@ -446,7 +445,7 @@ const Settings: React.FC = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </section>
         </div>
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { tmdbApi } from '@/services/tmdb';
 import { TMDB_MOVIE_GENRE_MAP, TMDB_TV_GENRE_MAP } from '@/utils/genreMapping';
 import { toast as sonnerToast } from '@/components/ui/sonner';
 import { Bell, CalendarDays, Film, Tv, ArrowLeft, Loader2, CheckCircle, Sparkles } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import watchverseLogo from '@/assets/watchverse-logo.png';
 
 type PublicType = 'movies' | 'series';
@@ -65,12 +66,16 @@ export default function Releases() {
   const navigate = useNavigate();
   const type: PublicType = typeParam === 'series' ? 'series' : 'movies';
   const [activeWindow, setWindow] = useState<ReleaseWindow>('week');
+  const requestId = useRef(0);
+  const [loadError, setLoadError] = useState(false);
+  const [search, setSearch] = useState('');
   const [items, setItems] = useState<ReleaseItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ReleaseItem | null>(null);
   const [notifyEmail, setNotifyEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [notifying, setNotifying] = useState(false);
   const [notified, setNotified] = useState(false);
 
@@ -116,16 +121,20 @@ export default function Releases() {
   }, [items, heading, type]);
 
   const fetchItems = useCallback(async (targetPage: number, reset: boolean) => {
-    setLoading(true);
+    const request = ++requestId.current;
+    setLoading(true); setLoadError(false);
+    if (reset) setItems([]);
     try {
       const data = await tmdbApi.discoverUpcomingPublic(type === 'movies' ? 'movie' : 'series', activeWindow, targetPage);
-      const results: ReleaseItem[] = data.results || [];
+      if (request !== requestId.current) return;
+      const today = new Date().toISOString().split('T')[0];
+      const results: ReleaseItem[] = (data.results || []).filter((item: ReleaseItem) => (item.release_date || item.first_air_date || '') >= today);
       setTotalPages(Math.min(data.total_pages || 1, 5));
-      setItems(prev => (reset ? results : [...prev, ...results]));
+      setItems(prev => Array.from(new Map((reset ? results : [...prev, ...results]).map(item => [item.id, item])).values()));
     } catch {
-      sonnerToast.error('Could not load releases. Try again.');
+      if (request === requestId.current) setLoadError(true);
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   }, [type, activeWindow]);
 
@@ -141,18 +150,20 @@ export default function Releases() {
   };
 
   const handleNotify = async () => {
-    if (!notifyEmail || !selected) return;
+    if (!selected) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notifyEmail.trim())) { setEmailError('Enter a valid email address.'); return; }
+    setEmailError('');
     setNotifying(true);
     try {
-      const { error } = await supabase.from('notification_subscribers').upsert({
-        email: notifyEmail,
+      const { error } = await supabase.from('notification_subscribers').insert({
+        email: notifyEmail.trim().toLowerCase(),
         name: null,
         is_active: true,
         notification_type: type === 'movies' ? 'movies' : 'series',
-      }, { onConflict: 'email' });
-      if (error) throw error;
+      });
+      if (error && error.code !== '23505') throw error;
       setNotified(true);
-      sonnerToast.success(`You'll get an alert before "${selected.title || selected.name}" releases! 🔔`);
+      sonnerToast.success('You joined the release-news list.');
     } catch {
       sonnerToast.error('Something went wrong, try again.');
     } finally {
@@ -168,7 +179,7 @@ export default function Releases() {
       .filter(Boolean)
       .slice(0, 3);
 
-  const grid = useMemo(() => items.filter(i => i.poster_path), [items]);
+  const grid = useMemo(() => items.filter(i => (i.title || i.name || '').toLowerCase().includes(search.toLowerCase())), [items, search]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -182,11 +193,12 @@ export default function Releases() {
             </span>
           </Link>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <ThemeToggle />
             <Button asChild variant="ghost" size="sm" className="text-xs sm:text-sm">
               <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />Home</Link>
             </Button>
             <Button asChild size="sm" className="bg-gradient-primary hover:shadow-glow transition-all text-xs sm:text-sm px-3 sm:px-4">
-              <Link to="/">Sign Up Free</Link>
+              <Link to="/#auth-section">Sign Up Free</Link>
             </Button>
           </div>
         </div>
@@ -194,33 +206,33 @@ export default function Releases() {
 
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-10">
         {/* Heading */}
-        <div className="text-center mb-6 sm:mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs sm:text-sm text-primary mb-3">
+        <div className="mb-6 sm:mb-10">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-md bg-primary/10 border border-primary/20 text-xs sm:text-sm text-primary mb-3">
             <Sparkles className="h-3.5 w-3.5" />
-            No account needed to browse
+            THE WATCHVERSE CALENDAR
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold bg-gradient-to-r from-neon-purple via-neon-pink to-electric-blue bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl font-semibold">
             {heading}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
-            Every release date with a live countdown. Open a title and leave your email — we'll alert you before it drops.
+            The stories coming next. Find your next movie or series.
           </p>
         </div>
 
         {/* Type tabs */}
         <div className="flex justify-center mb-4">
-          <div className="inline-flex rounded-full border border-primary/20 bg-card/50 p-1">
+          <div className="inline-flex rounded-md border border-primary/20 bg-card/50 p-1">
             {(['movies', 'series'] as PublicType[]).map(t => (
-              <button
+              <Button variant="ghost"
                 key={t}
                 onClick={() => navigate(`/releases/${t}`)}
-                className={`flex items-center gap-1.5 px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
-                  type === t ? 'bg-gradient-to-r from-neon-purple to-neon-pink text-white shadow-glow' : 'text-muted-foreground hover:text-foreground'
+                className={`flex items-center gap-1.5 px-4 sm:px-6 py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                  type === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {t === 'movies' ? <Film className="h-4 w-4" /> : <Tv className="h-4 w-4" />}
                 {t === 'movies' ? 'Movies' : 'Series'}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -228,10 +240,10 @@ export default function Releases() {
         {/* Window chips */}
         <div className="flex flex-wrap justify-center gap-2 mb-6 sm:mb-8">
           {WINDOWS.map(w => (
-            <button
+            <Button variant="ghost"
               key={w.key}
               onClick={() => setWindow(w.key)}
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm border transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm border transition-all ${
                 activeWindow === w.key
                   ? 'bg-primary/15 border-primary/40 text-primary'
                   : 'border-border/50 text-muted-foreground hover:border-primary/30 hover:text-foreground'
@@ -239,20 +251,22 @@ export default function Releases() {
             >
               <CalendarDays className="h-3.5 w-3.5" />
               {w.label}
-            </button>
+            </Button>
           ))}
         </div>
 
+        <Input aria-label="Find a release" placeholder="Find a title in these releases…" value={search} onChange={e => setSearch(e.target.value)} className="max-w-md mb-6" />
         {/* Grid */}
         {loading && grid.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="aspect-[2/3] rounded-xl bg-card/40 border border-primary/10 animate-pulse" />
+              <div key={i} className="aspect-[2/3] rounded-lg bg-card/40 border border-primary/10 animate-pulse" />
             ))}
           </div>
         ) : grid.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            No releases found for this activeWindow — try a wider one.
+            <p>{loadError ? "Releases couldn't load right now." : 'No releases found for this period.'}</p>
+            <Button variant="outline" className="mt-4" onClick={() => loadError ? fetchItems(1, true) : setWindow('soonest')}>{loadError ? 'Try again' : 'Next 4 Months'}</Button>
           </div>
         ) : (
           <>
@@ -260,10 +274,10 @@ export default function Releases() {
               {grid.map(item => {
                 const diff = daysUntil(getItemDate(item));
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={`${type}-${item.id}`}
-                    onClick={() => { setSelected(item); setNotified(false); setNotifyEmail(''); }}
-                    className="group text-left rounded-xl overflow-hidden bg-card/50 border border-primary/10 hover:border-primary/40 transition-all hover:shadow-glow cursor-pointer"
+                    onClick={() => { setSelected(item); setNotified(false); setNotifyEmail(''); setEmailError(''); }}
+                    className="release-card group block h-auto w-full p-0 whitespace-normal text-left rounded-lg overflow-hidden bg-card/50 border border-primary/10 hover:border-primary/40 transition-all hover:shadow-glow cursor-pointer"
                   >
                     <div className="aspect-[2/3] relative overflow-hidden">
                       <img
@@ -272,9 +286,9 @@ export default function Releases() {
                         loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold backdrop-blur-md ${
+                      <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-semibold backdrop-blur-md ${
                         diff !== null && diff <= 1
-                          ? 'bg-neon-pink/80 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : 'bg-background/70 text-foreground border border-primary/20'
                       }`}>
                         {daysLabel(diff)}
@@ -289,7 +303,7 @@ export default function Releases() {
                         {item.overview}
                       </p>
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -305,7 +319,7 @@ export default function Releases() {
         )}
 
         {/* Conversion strip */}
-        <div className="mt-12 sm:mt-16 rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-sm p-6 sm:p-8 text-center">
+        <div className="mt-12 sm:mt-16 border-t border-border p-6 sm:p-8 text-center">
           <h2 className="text-lg sm:text-2xl font-bold">
             Want alerts for <span className="bg-gradient-to-r from-neon-purple to-neon-pink bg-clip-text text-transparent">your</span> taste?
           </h2>
@@ -313,7 +327,7 @@ export default function Releases() {
             Create a free account, pick the genres and platforms you love, and WatchVerse watches the calendar for you.
           </p>
           <Button asChild size="lg" className="mt-5 bg-gradient-primary hover:shadow-glow transition-all">
-            <Link to="/">Create free account</Link>
+            <Link to="/#auth-section">Create free account</Link>
           </Button>
         </div>
       </main>
@@ -334,11 +348,11 @@ export default function Releases() {
                   <DialogDescription asChild>
                     <div className="mt-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 text-xs text-primary">
                           <CalendarDays className="h-3.5 w-3.5" />
                           {tmdbApi.formatDate(getItemDate(selected))}
                         </span>
-                        <span className="px-2.5 py-1 rounded-full bg-neon-pink/10 border border-neon-pink/20 text-xs text-neon-pink font-medium">
+                        <span className="px-2.5 py-1 rounded-md bg-neon-pink/10 border border-neon-pink/20 text-xs text-neon-pink font-medium">
                           {daysLabel(daysUntil(getItemDate(selected)))}
                         </span>
                       </div>
@@ -357,24 +371,25 @@ export default function Releases() {
                 </p>
 
                 {/* Notify capture */}
-                <div className="mt-4 rounded-xl border border-primary/20 bg-background/50 p-4">
+                <div className="mt-4 rounded-lg border border-primary/20 bg-background/50 p-4">
                   {notified ? (
-                    <div className="flex items-center gap-2 text-sm text-green-400">
+                    <div className="flex items-center gap-2 text-sm text-success">
                       <CheckCircle className="h-4 w-4" />
-                      You're on the list — we'll email you before the release. 🎉
+                      You're on the release-news list.
                     </div>
                   ) : (
                     <>
                       <p className="text-sm font-medium flex items-center gap-1.5">
                         <Bell className="h-4 w-4 text-primary" />
-                        Get an email alert before it releases
+                        Join the release-news list
                       </p>
                       <div className="mt-2.5 flex gap-2">
                         <Input
                           type="email"
                           placeholder="your@email.com"
                           value={notifyEmail}
-                          onChange={(e) => setNotifyEmail(e.target.value)}
+                          aria-invalid={!!emailError}
+                          onChange={(e) => { setNotifyEmail(e.target.value); setEmailError(''); }}
                           className="bg-background/70 border-primary/20 focus:border-primary/50"
                         />
                         <Button
@@ -385,8 +400,9 @@ export default function Releases() {
                           {notifying ? '...' : 'Notify Me'}
                         </Button>
                       </div>
+                      {emailError && <p role="alert" className="mt-2 text-sm text-destructive">{emailError}</p>}
                       <p className="mt-2 text-[11px] text-muted-foreground">
-                        One alert per release. Unsubscribe anytime.
+                        Updates about upcoming releases. This does not schedule an alert for this specific title.
                       </p>
                     </>
                   )}
