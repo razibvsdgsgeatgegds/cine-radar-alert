@@ -261,23 +261,24 @@ const Landing = () => {
       </section>
 
       {/* Auth Section */}
-      <section id="auth-section" className="py-12 sm:py-20 relative scroll-mt-20">
-        <div className="absolute inset-0 bg-gradient-to-r from-neon-purple/5 to-electric-blue/5"></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-md mx-auto">
-            <Card className="shadow-glow bg-card/80 backdrop-blur-sm border-primary/20">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-3">
-                  <img src={watchverseLogo} alt="WatchVerse" className="h-14 w-14 sm:h-16 sm:w-16 mx-auto rounded-xl" />
+      <section id="auth-section" className="py-12 sm:py-20 relative scroll-mt-20 auth-band">
+
+        <div className="container mx-auto px-5 sm:px-8 relative z-10 grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
+          <div className="auth-intro"><p className="section-eyebrow mb-5">YOUR PERSONAL FRONT ROW</p><h2 className="text-4xl sm:text-5xl font-semibold leading-tight">Good stories.<br /><span className="text-neon-cyan">Great anticipation.</span><br />All yours.</h2><p className="text-muted-foreground text-lg leading-relaxed mt-6 max-w-md">Your next obsession deserves a place on your list. Make it your WatchVerse.</p><div className="mt-8 space-y-4"><p className="flex items-center gap-3"><Heart className="text-neon-pink w-5 h-5" />A shortlist that follows you</p><p className="flex items-center gap-3"><Calendar className="text-neon-cyan w-5 h-5" />Upcoming stories, not endless scrolling</p><p className="flex items-center gap-3"><Shield className="text-primary w-5 h-5" />Your tastes. Your account.</p></div></div>
+          <div className="w-full max-w-md mx-auto">
+            <Card className="auth-panel bg-card border-border">
+              <CardHeader className="text-left pb-5 p-6 sm:p-8">
+                <div className="mb-3 flex items-center gap-3">
+                  <img src={watchverseLogo} alt="WatchVerse" className="h-10 w-10 rounded-lg" />
                 </div>
                 <CardTitle className="text-2xl sm:text-3xl text-foreground">
                   {isLogin ? 'Welcome Back' : 'Join WatchVerse'}
                 </CardTitle>
                 <CardDescription className="text-sm sm:text-lg">
-                  {isLogin ? 'Your releases, right where you left them.' : 'A shortlist that follows you. Free to join.'}
+                  {isLogin ? 'The next chapter is waiting for you.' : 'A shortlist that follows you. Free to join.'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5 sm:space-y-6">
+              <CardContent className="space-y-5 p-6 pt-0 sm:p-8 sm:pt-0">
                 <Button
                   onClick={handleGoogleAuth}
                   disabled={loading}
@@ -307,7 +308,7 @@ const Landing = () => {
                           id="name"
                           type="text"
                           placeholder="Your full name"
-                          className="pl-10 bg-input/50 border-primary/20 focus:border-primary/50"
+                          className="h-12 pl-10 bg-background border-border focus:border-primary"
                           value={authData.name}
                           onChange={(e) => setAuthData({...authData, name: e.target.value})}
                           required={!isLogin}
@@ -324,7 +325,7 @@ const Landing = () => {
                         id="email"
                         type="email"
                         placeholder="your@email.com"
-                        className="pl-10 bg-input/50 border-primary/20 focus:border-primary/50"
+                        className="h-12 pl-10 bg-background border-border focus:border-primary"
                         value={authData.email}
                         onChange={(e) => setAuthData({...authData, email: e.target.value})}
                         required
@@ -338,7 +339,7 @@ const Landing = () => {
                       id="password"
                       type="password"
                       placeholder="••••••••"
-                      className="bg-input/50 border-primary/20 focus:border-primary/50"
+                      className="h-12 bg-background border-border focus:border-primary"
                       value={authData.password}
                       onChange={(e) => setAuthData({...authData, password: e.target.value})}
                       required
@@ -365,7 +366,7 @@ const Landing = () => {
                   </Button>
                 </form>
                 
-                <div className="text-center">
+                <div className="text-center border-t border-border pt-4">
                   <Button
                     variant="link"
                     onClick={() => setIsLogin(!isLogin)}
@@ -413,7 +414,8 @@ const Landing = () => {
             
             {/* Legal */}
             <div className="text-center sm:text-right">
-              <h4 className="font-semibold text-foreground mb-3 text-sm">Legal</h4>
+              <h4 className="font-semibold text-foreground mb-3 text-sm">About the creator</h4>
+              <Button asChild variant="link" className="px-0 text-neon-cyan"><a href="https://www.linkedin.com/in/mrazi-dev/" target="_blank" rel="noopener noreferrer">Muhammad Razi Khoja <ArrowRight className="h-4 w-4" /></a></Button>
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground flex items-center justify-center sm:justify-end gap-1.5">
                   <Shield className="h-3.5 w-3.5" />

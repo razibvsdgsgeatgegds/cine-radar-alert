@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { UserPreferences } from '@/types';
 import { Sparkles, Users, Calendar, Star, Languages, Film, Tv, Rocket } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import cinemaImage from '@/assets/watchverse-cinema.jpg';
 import watchverseLogo from '@/assets/watchverse-logo.png';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -137,10 +139,10 @@ export const Onboarding: React.FC = () => {
     switch (step) {
       case 1:
         return (
-          <Card className="w-full max-w-md mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-3 sm:space-y-4">
+          <Card className="w-full max-w-md mx-auto bg-transparent border-0 shadow-none">
+            <CardHeader className="text-left space-y-3 sm:space-y-4">
               <img src={watchverseLogo} alt="WatchVerse" className="mx-auto w-14 h-14 sm:w-16 sm:h-16 rounded-xl" />
-              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-primary to-neon-pink bg-clip-text text-transparent">
+              <CardTitle className="text-xl sm:text-2xl text-foreground">
                 Welcome to WatchVerse
               </CardTitle>
               <CardDescription className="text-sm">
@@ -180,18 +182,18 @@ export const Onboarding: React.FC = () => {
         );
       case 2:
         return (
-          <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-3 sm:space-y-4">
+          <Card className="w-full max-w-2xl mx-auto bg-transparent border-0 shadow-none">
+            <CardHeader className="text-left space-y-3 sm:space-y-4">
               <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-electric-blue to-neon-cyan rounded-full flex items-center justify-center">
                 <Film className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" />
               </div>
-              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-electric-blue to-neon-cyan bg-clip-text text-transparent">Content Preferences</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl text-foreground">Content Preferences</CardTitle>
               <CardDescription className="text-sm">Tell us what you like to watch.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5 sm:space-y-6">
               <div>
                 <Label className="flex items-center gap-2 mb-3 text-base sm:text-lg"><Languages className="w-4 h-4 sm:w-5 sm:h-5"/>Languages</Label>
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map(lang => (
                     <Button type="button" key={lang} aria-pressed={formData.languages.includes(lang)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.languages.includes(lang) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(lang, 'languages')}>{lang}</Button>
                   ))}
@@ -199,7 +201,7 @@ export const Onboarding: React.FC = () => {
               </div>
               <div>
                 <Label className="flex items-center gap-2 mb-3 text-base sm:text-lg"><Star className="w-4 h-4 sm:w-5 sm:h-5"/>Industries</Label>
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap gap-2">
                   {INDUSTRIES.map(ind => (
                     <Button type="button" key={ind} aria-pressed={formData.industries.includes(ind)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.industries.includes(ind) ? 'bg-gradient-to-r from-electric-blue to-neon-cyan text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(ind, 'industries')}>{ind}</Button>
                   ))}
@@ -210,10 +212,10 @@ export const Onboarding: React.FC = () => {
         );
       case 3:
         return (
-          <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-3 sm:space-y-4">
+          <Card className="w-full max-w-2xl mx-auto bg-transparent border-0 shadow-none">
+            <CardHeader className="text-left space-y-3 sm:space-y-4">
               <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-neon-cyan to-electric-blue rounded-full flex items-center justify-center"><Star className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-neon-cyan to-electric-blue bg-clip-text text-transparent">Movie Preferences</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl text-foreground">Movie Preferences</CardTitle>
               <CardDescription className="text-sm">Select your favorite movie genres</CardDescription>
             </CardHeader>
             <CardContent>
@@ -222,7 +224,7 @@ export const Onboarding: React.FC = () => {
                   Select All
                 </Button>
               </div>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap gap-2">
                 {MOVIE_GENRES.map(genre => (<Button type="button" key={genre} aria-pressed={formData.movieGenres.includes(genre)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.movieGenres.includes(genre) ? 'bg-gradient-to-r from-neon-cyan to-electric-blue text-primary-foreground' : 'hover:border-neon-cyan'}`} onClick={() => handleToggle(genre, 'movieGenres')}>{genre}</Button>))}
               </div>
             </CardContent>
@@ -230,10 +232,10 @@ export const Onboarding: React.FC = () => {
         );
       case 4:
         return (
-          <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-3 sm:space-y-4">
+          <Card className="w-full max-w-2xl mx-auto bg-transparent border-0 shadow-none">
+            <CardHeader className="text-left space-y-3 sm:space-y-4">
               <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-neon-pink to-primary rounded-full flex items-center justify-center"><Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-neon-pink to-primary bg-clip-text text-transparent">Series Preferences</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl text-foreground">Series Preferences</CardTitle>
               <CardDescription className="text-sm">Select your favorite TV series genres</CardDescription>
             </CardHeader>
             <CardContent>
@@ -242,7 +244,7 @@ export const Onboarding: React.FC = () => {
                   Select All
                 </Button>
               </div>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap gap-2">
                 {SERIES_GENRES.map(genre => (<Button type="button" key={genre} aria-pressed={formData.seriesGenres.includes(genre)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.seriesGenres.includes(genre) ? 'bg-gradient-to-r from-neon-pink to-primary text-primary-foreground' : 'hover:border-neon-pink'}`} onClick={() => handleToggle(genre, 'seriesGenres')}>{genre}</Button>))}
               </div>
             </CardContent>
@@ -250,10 +252,10 @@ export const Onboarding: React.FC = () => {
         );
       case 5:
         return (
-          <Card className="w-full max-w-2xl mx-auto bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="text-center space-y-3 sm:space-y-4">
+          <Card className="w-full max-w-2xl mx-auto bg-transparent border-0 shadow-none">
+            <CardHeader className="text-left space-y-3 sm:space-y-4">
               <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-golden to-accent rounded-full flex items-center justify-center"><Calendar className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" /></div>
-              <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-golden to-accent bg-clip-text text-transparent">Gaming Preferences</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl text-foreground">Gaming Preferences</CardTitle>
               <CardDescription className="text-sm">Select your favorite game genres</CardDescription>
             </CardHeader>
             <CardContent>
@@ -262,7 +264,7 @@ export const Onboarding: React.FC = () => {
                   Select All
                 </Button>
               </div>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap gap-2">
                 {GAME_GENRES.map(genre => (<Button type="button" key={genre} aria-pressed={formData.gameGenres.includes(genre)} variant="outline" className={`cursor-pointer px-3 py-2 text-xs sm:text-sm text-center transition-all ${formData.gameGenres.includes(genre) ? 'bg-gradient-to-r from-golden to-accent text-primary-foreground' : 'hover:border-golden'}`} onClick={() => handleToggle(genre, 'gameGenres')}>{genre}</Button>))}
               </div>
             </CardContent>
@@ -274,10 +276,12 @@ export const Onboarding: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary flex flex-col items-center justify-center p-3 sm:p-4">
-      
-      <div className="relative z-10 w-full max-w-4xl">
-        <p className="mb-3 text-center text-sm text-muted-foreground">Step {step} of 5</p>
+    <div className="min-h-screen bg-background">
+      <header className="flex justify-between items-center border-b border-border px-5 sm:px-8 py-4"><div className="flex items-center gap-3"><img src={watchverseLogo} alt="" className="w-8 h-8 rounded-md" /><span className="font-semibold">WatchVerse</span></div><ThemeToggle /></header>
+      <main className="grid lg:grid-cols-2 min-h-[calc(100vh-73px)]">
+        <aside className="setup-art relative overflow-hidden hidden lg:flex items-end p-12"><img src={cinemaImage} alt="Modern cinema" className="absolute inset-0 w-full h-full object-cover" /><div className="relative z-10 text-cinema-foreground"><p className="section-eyebrow mb-4">MAKE THE VERSE YOURS</p><h1 className="text-5xl font-semibold leading-tight">A taste for<br />what comes next.</h1><p className="mt-5 text-cinema-foreground/80 max-w-sm text-lg">Your stories. Your genres. Your front-row seat.</p></div></aside>
+      <div className="w-full max-w-2xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
+        <p className="mb-3 text-center text-sm text-muted-foreground">Your taste · Step {step} of 5</p>
         <div className="mb-6 sm:mb-8 flex justify-center">
           <div className="flex space-x-2">
             {[1, 2, 3, 4, 5].map(i => (<div key={i} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all ${i <= step ? 'bg-primary' : 'bg-muted'}`} />))}
@@ -291,6 +295,7 @@ export const Onboarding: React.FC = () => {
           </Button>
         </div>
       </div>
+      </main>
     </div>
   );
 };

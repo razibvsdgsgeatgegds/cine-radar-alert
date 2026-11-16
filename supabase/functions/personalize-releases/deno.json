@@ -1,0 +1,4 @@
+{
+  "nodeModulesDir": "auto",
+  "imports": { "@lovable.dev/ai-gateway": "npm:@lovable.dev/ai-gateway@0.1.11" }
+}

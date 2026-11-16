@@ -1,5 +1,11 @@
 # WatchVerse roadmap
 
+- [x] Refresh sign-in/signup presentation and onboarding into a premium cinema-themed experience without changing authentication rules; public signup/sign-in views verified on desktop/mobile.
+- [x] Implement authenticated AI picks from future-only candidates with server-profile taste data and safe fallback states; server typecheck and candidate validation tests passed.
+- [x] Add safe streaming-provider open links to movie/series cards; official/fallback URL tests passed.
+- [x] Add an About credit for Muhammad Razi Khoja linking to https://www.linkedin.com/in/mrazi-dev/; link verified in browser.
+- [ ] Verify signed-in AI generation, streaming-card interaction, and onboarding layout against a real account. Blocker: external Supabase has no managed browser session; AI code and server checks passed, but live generation remains unverified.
+
 - [x] Make the home page more engaging with a real upcoming-title spotlight, movie/series browsing, and restrained cinematic motion; verified story details, signup navigation, and mobile/desktop layout without runtime errors.
 
 - [x] Refresh home, calendar, dashboard, onboarding, and Settings with refined-neon tokens and mobile-safe controls.

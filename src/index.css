@@ -197,3 +197,9 @@
   }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 }
+
+@layer components {
+  .auth-band { background: hsl(var(--muted) / .35); }
+  .auth-panel { box-shadow: var(--shadow-card); border-top: 3px solid hsl(var(--neon-cyan)); }
+  .setup-art::before { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(0deg, hsl(var(--cinema-background) / .95), hsl(var(--cinema-background) / .25)); }
+}

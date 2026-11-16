@@ -15,6 +15,7 @@ import { NotificationPrompt } from './NotificationPrompt';
 import { DashboardFilters } from './DashboardFilters';
 import { ThemeToggle } from './ThemeToggle';
 import { toast } from 'sonner';
+import { AIPicks } from './AIPicks';
 
 export const Dashboard: React.FC = () => {
   const { user, setUser } = useUser();
@@ -258,6 +259,7 @@ export const Dashboard: React.FC = () => {
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
           <div className="mb-8 flex flex-wrap justify-between items-end gap-4"><div><p className="section-eyebrow mb-2">YOUR WATCHVERSE</p><h2 className="text-3xl font-semibold">The next chapter.</h2><p className="text-muted-foreground mt-2">Upcoming stories picked for your taste.</p></div><div className="flex flex-wrap gap-2"><Button variant={showSaved ? 'default' : 'outline'} onClick={() => setShowSaved(!showSaved)}><Bookmark />Saved ({user.notification_list.length})</Button><Button variant="outline" onClick={() => navigate('/releases')}><CalendarDays />Calendar</Button></div></div>
           {showSaved && <section className="border-y border-border py-6 mb-8"><h3 className="text-xl font-semibold mb-4">Saved releases</h3>{user.notification_list.length === 0 ? <p className="text-muted-foreground">No saved releases yet.</p> : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{[...user.notification_list].sort((a,b) => a.date.localeCompare(b.date)).map(item => <div key={`${item.type}-${item.id}`} className="flex gap-3 items-center"><img src={tmdbApi.getPosterUrl(item.poster_path)} alt={item.name} className="w-12 h-16 object-cover rounded-md" /><div className="min-w-0 flex-1"><p className="font-medium truncate">{item.name}</p><p className="text-xs text-muted-foreground">{tmdbApi.formatDate(item.date)}</p></div><Button size="icon" variant="ghost" aria-label={`Remove ${item.name}`} onClick={() => { void setUser({...user, notification_list: user.notification_list.filter(i => !(i.id === item.id && i.type === item.type))}).catch(() => toast.error('Could not remove release.')); }}><Trash2 /></Button></div>)}</div>}</section>}
+          {!loading && <AIPicks movies={movies} series={series} onSelect={handleCardClick} />}
           <DashboardFilters initialFilters={filters} onApplyFilters={handleApplyFilters} loading={loading} />
 
           <div className="mb-4 sm:mb-6">

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Plus, Check, Star } from 'lucide-react';
+import { Calendar, Plus, Check, Star, ExternalLink } from 'lucide-react';
 import { Movie, TVShow, WatchProvider } from '@/types';
 import { tmdbApi } from '@/services/tmdb';
+import { streamingLink } from '@/lib/streamingLinks';
 import { useUser } from '@/contexts/UserContext';
 
 interface ContentCardProps {
@@ -17,6 +18,7 @@ interface ContentCardProps {
 
 export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, onToggleNotification, isNotificationEnabled }) => {
   const { user } = useUser();
+  const [providerLink, setProviderLink] = useState<string | null>(null);
   const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([]);
 
   const title = type === 'movie' ? (item as Movie).title : (item as TVShow).name;
@@ -36,6 +38,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
           ? await tmdbApi.getMovieWatchProviders(item.id, user.location.country)
           : await tmdbApi.getSeriesWatchProviders(item.id, user.location.country);
         
+        setProviderLink(providers?.link || null);
         if (providers?.flatrate) {
           setWatchProviders(providers.flatrate.slice(0, 3)); // Show max 3 providers
         }
@@ -107,14 +110,15 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item, type, onClick, o
                 {watchProviders.map((provider) => (
                   <div
                     key={provider.provider_id}
-                    className="flex items-center gap-1 bg-muted/50 rounded px-2 py-1"
+                    className="flex items-center gap-1 bg-muted/50 rounded px-2 py-1 max-w-full"
                   >
                     <img
                       src={`https://image.tmdb.org/t/p/w45${provider.logo_path}`}
                       alt={provider.provider_name}
                       className="w-4 h-4 rounded-sm"
                     />
-                    <span className="text-xs font-medium">{provider.provider_name}</span>
+                    <span className="text-xs font-medium break-words">{provider.provider_name}</span>
+                    {streamingLink(provider.provider_name, providerLink) && <Button asChild variant="ghost" size="icon" className="h-7 w-7 shrink-0"><a href={streamingLink(provider.provider_name, providerLink) || undefined} target="_blank" rel="noopener noreferrer" aria-label={`Open ${provider.provider_name}`} title={`Open ${provider.provider_name}`} onClick={e => e.stopPropagation()}><ExternalLink className="h-3 w-3" /></a></Button>}
                   </div>
                 ))}
               </div>

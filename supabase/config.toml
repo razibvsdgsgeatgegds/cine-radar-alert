@@ -2,3 +2,6 @@ project_id = "jbgukrjlbfhawferxgpt"
 
 [functions.send-promotional-email]
 verify_jwt = false
+
+[functions.personalize-releases]
+verify_jwt = false
