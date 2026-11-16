@@ -14,6 +14,7 @@ import cinemaImage from '@/assets/watchverse-cinema.jpg';
 import watchverseLogo from '@/assets/watchverse-logo.png';
 import { SignupPopup } from '@/components/SignupPopup';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { UpcomingSpotlight } from '@/components/UpcomingSpotlight';
 
 const GameNotifyForm = () => {
   const [gameEmail, setGameEmail] = useState('');
@@ -232,9 +233,10 @@ const Landing = () => {
       <section className="cinema-hero">
         <img src={cinemaImage} alt="Red velvet seats in a modern cinema" width={1600} height={912} />
         <div className="container mx-auto px-5 sm:px-8 cinema-copy">
-          <p className="section-eyebrow mb-5">YOUR NEXT OBSESSION STARTS HERE</p>
+          <p className="section-eyebrow mb-5 flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-neon-cyan animate-pulse" />THE GOOD PART IS STILL AHEAD</p>
           <h1>WatchVerse<span className="text-primary">.</span></h1>
-          <p className="mt-5 text-lg text-cinema-foreground/80">The anticipation is part of the story. Discover upcoming movies and series. Keep the releases you can't wait for in one place.</p>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-semibold leading-tight">Find your next<br /><span className="text-neon-pink">can't-wait-to-watch.</span></h2>
+          <p className="mt-5 text-base text-cinema-foreground/80">Big-screen moments. One-more-episode nights. Get ahead of the movies and series coming next.</p>
           <div className="flex flex-wrap gap-3 mt-8">
             <Button asChild size="lg"><Link to="/releases">Explore releases <ArrowRight /></Link></Button>
             <Button size="lg" variant="outline" onClick={scrollToSignup} className="border-cinema-foreground/30 bg-cinema-background/40 text-cinema-foreground hover:bg-cinema-foreground/10 hover:text-cinema-foreground">Get Started Free</Button>
@@ -242,15 +244,10 @@ const Landing = () => {
           <div className="flex flex-wrap gap-5 mt-9 text-sm text-cinema-foreground/70"><span className="flex items-center gap-2"><Film className="w-4 h-4 text-primary" />Movies</span><span className="flex items-center gap-2"><Tv className="w-4 h-4 text-neon-cyan" />Series</span><span className="flex items-center gap-2"><Gamepad2 className="w-4 h-4 text-golden" />Games · coming soon</span></div>
         </div>
       </section>
-      <section className="border-b border-border py-9 sm:py-12">
-        <div className="container mx-auto px-5 sm:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-          <div><p className="section-eyebrow mb-2">THE RELEASE CALENDAR</p><h2 className="text-2xl sm:text-3xl font-semibold">Something worth waiting for.</h2><p className="text-muted-foreground mt-2">Movies and series. Today, next week, and beyond.</p></div>
-          <Button asChild variant="outline"><Link to="/releases/movies">What's coming next <ArrowRight /></Link></Button>
-        </div>
-      </section>
+      <UpcomingSpotlight />
       <section className="py-14 sm:py-20">
         <div className="container mx-auto px-5 sm:px-8">
-          <p className="section-eyebrow mb-3">MADE FOR YOUR TASTE</p><h2 className="text-3xl font-semibold mb-10">Less searching. More anticipation.</h2>
+          <p className="section-eyebrow mb-3">FOR THE ONES WHO LOVE THE WAIT</p><h2 className="text-3xl font-semibold mb-10">A little less scrolling.<br />A lot more looking forward.</h2>
           <div className="grid sm:grid-cols-3 gap-8 sm:gap-10">
             {[{icon: Film, title: 'A calendar, not a catalogue', body: 'Fresh movie and series dates, without the already-released clutter.'}, {icon: Heart, title: 'Your own shortlist', body: 'Save the titles you care about, with your preferences kept in your account.'}, {icon: Search, title: 'Find your kind of story', body: 'Discover upcoming releases by genre, language, and country.'}].map(({icon: Icon, title, body}) => <div key={title} className="border-t border-border pt-6"><Icon className="h-6 w-6 text-neon-cyan mb-5" /><h3 className="font-semibold text-lg mb-2">{title}</h3><p className="text-muted-foreground text-sm leading-relaxed">{body}</p></div>)}
           </div>

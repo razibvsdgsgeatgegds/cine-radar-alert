@@ -1,5 +1,7 @@
 # WatchVerse roadmap
 
+- [x] Make the home page more engaging with a real upcoming-title spotlight, movie/series browsing, and restrained cinematic motion; verified story details, signup navigation, and mobile/desktop layout without runtime errors.
+
 - [x] Refresh home, calendar, dashboard, onboarding, and Settings with refined-neon tokens and mobile-safe controls.
 - [x] Resolve account setup from server profiles; save preferences and completion together; preserve explicit reset and show retry instead of setup on account-load errors. Four account-rule tests passed.
 - [x] Add a date-sorted saved-release view, accessible save controls, debounced search, and calendar title filtering.
