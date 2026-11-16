@@ -5,7 +5,10 @@ test('completed account stays completed without any browser cache', () => {
   expect(resolveAccountProfile({ onboarding_completed: true, preferences: { name: 'Returning user' } }, 'returning@example.test').completed).toBe(true);
 });
 test('incomplete signup must complete setup on next login', () => {
-  expect(resolveAccountProfile({ onboarding_completed: false, preferences: { name: 'New user' } }, 'new@example.test').completed).toBe(false);
+  expect(resolveAccountProfile(null, 'new@example.test').completed).toBe(false);
+});
+test('saved preferences skip setup even if the completion flag was lost', () => {
+  expect(resolveAccountProfile({ onboarding_completed: false, preferences: { name: 'Old user' } }, 'old@example.test').completed).toBe(true);
 });
 test('explicit reset clears completed setup', () => {
   expect(resolveAccountProfile({ onboarding_completed: false, preferences: null }, 'returning@example.test')).toEqual({ user: null, completed: false });

@@ -51,7 +51,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('preferences, onboarding_completed, name, email').eq('id', sbUser.id).maybeSingle();
       if (error) throw error;
       if (generation.current !== request) return;
-      const resolved = resolveAccountProfile(data, email);
+      let resolved = resolveAccountProfile(data, email);
+      // Older accounts finished setup before server profiles existed: move their cached setup to the account.
+      if (!resolved.completed) {
+        let cached: unknown = null;
+        try { cached = JSON.parse(localStorage.getItem(`radar-user-${email}`) || 'null'); } catch { cached = null; }
+        if (cached && typeof cached === 'object' && !data?.preferences) {
+          const prefs = normalizePreferences(cached as Partial<UserPreferences>, email);
+          const { error: upErr } = await supabase.from('profiles').upsert({ id: sbUser.id, email: email || null, name: prefs.name || null, preferences: prefs as unknown as Json, onboarding_completed: true });
+          if (!upErr) resolved = { user: prefs, completed: true };
+        }
+      }
+      if (generation.current !== request) return;
+      if (resolved.completed && data && !data.onboarding_completed) {
+        void supabase.from('profiles').update({ onboarding_completed: true }).eq('id', sbUser.id);
+      }
       // A completed server flag always bypasses setup, even if an older profile lacks preferences.
       const prefs = resolved.user || (resolved.completed ? normalizePreferences({ name: data?.name || name }, email) : null);
       setUserState(prefs); setOnboardingCompleted(resolved.completed);

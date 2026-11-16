@@ -16,6 +16,7 @@ export function resolveAccountProfile(profile: { preferences?: unknown; onboardi
   return {
     user: preferences && typeof preferences === 'object'
       ? normalizePreferences(preferences as Partial<UserPreferences>, email) : null,
-    completed: profile?.onboarding_completed === true,
+    // Preferences are only saved when setup finishes; reset clears them, so saved preferences mean setup is done.
+    completed: profile?.onboarding_completed === true || !!(preferences && typeof preferences === 'object'),
   };
 }
