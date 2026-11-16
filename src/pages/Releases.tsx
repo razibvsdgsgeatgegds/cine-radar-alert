@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +69,7 @@ export default function Releases() {
   const requestId = useRef(0);
   const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
+  const [pastAlert, setPastAlert] = useState<string | null>(null);
   const [items, setItems] = useState<ReleaseItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -80,7 +81,7 @@ export default function Releases() {
   const [notified, setNotified] = useState(false);
 
   const typeLabel = type === 'movies' ? 'Movies' : 'Series';
-  const heading = type === 'movies'
+  const heading = search.trim() ? `Upcoming ${typeLabel} matching "${search.trim()}"` : type === 'movies'
     ? `New Movies ${WINDOW_LABELS[activeWindow] === 'coming soon' ? 'Coming Soon' : WINDOW_LABELS[activeWindow]}`
     : `New Series ${WINDOW_LABELS[activeWindow] === 'coming soon' ? 'Coming Soon' : WINDOW_LABELS[activeWindow]}`;
 
@@ -123,10 +124,17 @@ export default function Releases() {
   const fetchItems = useCallback(async (targetPage: number, reset: boolean) => {
     const request = ++requestId.current;
     setLoading(true); setLoadError(false);
+    setPastAlert(null);
     if (reset) setItems([]);
     try {
-      const data = await tmdbApi.discoverUpcomingPublic(type === 'movies' ? 'movie' : 'series', activeWindow, targetPage);
+      const data = search.trim()
+        ? await tmdbApi.searchUpcoming(type === 'movies' ? 'movie' : 'series', search)
+        : await tmdbApi.discoverUpcomingPublic(type === 'movies' ? 'movie' : 'series', activeWindow, targetPage);
       if (request !== requestId.current) return;
+      if (data.pastMatch) {
+        const past = data.pastMatch;
+        setPastAlert(`"${past.title || past.name}" was released on ${tmdbApi.formatDate(past.release_date || past.first_air_date || '')}.`);
+      }
       const today = new Date().toISOString().split('T')[0];
       const results: ReleaseItem[] = (data.results || []).filter((item: ReleaseItem) => (item.release_date || item.first_air_date || '') >= today);
       setTotalPages(Math.min(data.total_pages || 1, 5));
@@ -136,11 +144,12 @@ export default function Releases() {
     } finally {
       if (request === requestId.current) setLoading(false);
     }
-  }, [type, activeWindow]);
+  }, [type, activeWindow, search]);
 
   useEffect(() => {
     setPage(1);
-    fetchItems(1, true);
+    const timer = window.setTimeout(() => fetchItems(1, true), search.trim() ? 350 : 0);
+    return () => { window.clearTimeout(timer); ++requestId.current; };
   }, [fetchItems]);
 
   const loadMore = () => {
@@ -179,7 +188,7 @@ export default function Releases() {
       .filter(Boolean)
       .slice(0, 3);
 
-  const grid = useMemo(() => items.filter(i => (i.title || i.name || '').toLowerCase().includes(search.toLowerCase())), [items, search]);
+  const grid = items;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -255,7 +264,8 @@ export default function Releases() {
           ))}
         </div>
 
-        <Input aria-label="Find a release" placeholder="Find a title in these releases…" value={search} onChange={e => setSearch(e.target.value)} className="max-w-md mb-6" />
+        <Input aria-label="Find a release" placeholder="Search upcoming titles…" value={search} onChange={e => { ++requestId.current; setLoading(true); setItems([]); setPastAlert(null); setSearch(e.target.value); }} className="max-w-md mb-6" />
+        {pastAlert && <p role="status" className="mb-4 text-sm text-muted-foreground">{pastAlert}</p>}
         {/* Grid */}
         {loading && grid.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
@@ -265,8 +275,8 @@ export default function Releases() {
           </div>
         ) : grid.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            <p>{loadError ? "Releases couldn't load right now." : 'No releases found for this period.'}</p>
-            <Button variant="outline" className="mt-4" onClick={() => loadError ? fetchItems(1, true) : setWindow('soonest')}>{loadError ? 'Try again' : 'Next 4 Months'}</Button>
+            <p>{loadError ? "Releases couldn't load right now." : search.trim() ? `No upcoming ${typeLabel.toLowerCase()} match "${search.trim()}".` : 'No releases found for this period.'}</p>
+            <Button variant="outline" className="mt-4" onClick={() => loadError ? fetchItems(1, true) : search.trim() ? setSearch('') : setWindow('soonest')}>{loadError ? 'Try again' : search.trim() ? 'Clear search' : 'Next 4 Months'}</Button>
           </div>
         ) : (
           <>

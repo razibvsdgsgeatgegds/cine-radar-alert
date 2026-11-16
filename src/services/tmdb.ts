@@ -1,4 +1,5 @@
 import { STREAMING_PLATFORMS } from '@/constants';
+import { classifyReleaseSearch, type SearchRelease } from '@/lib/releaseSearch';
 
 const TMDB_API_KEY = '8efe8647ea1db9fb32dcfdb0ea1dd302';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -107,6 +108,25 @@ const buildDiscoverParams = (
 };
 
 export const tmdbApi = {
+  // TMDB search does not support discover date/genre filters. Search globally,
+  // then enforce upcoming dates locally across multiple relevance-ranked pages.
+  searchUpcoming: async (type: 'movie' | 'series', query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return { results: [], pastMatch: undefined, total_pages: 1 };
+    const fetchPage = async (page: number) => {
+      const response = await fetch(buildApiUrl(type === 'movie' ? '/search/movie' : '/search/tv', {
+        query: trimmed, page: String(page), include_adult: 'false',
+      }));
+      if (!response.ok) throw new Error('Title search is unavailable. Please try again.');
+      const data = await response.json();
+      if (!Array.isArray(data.results)) throw new Error('Invalid title search response.');
+      return data;
+    };
+    const first = await fetchPage(1);
+    const count = Math.min(first.total_pages || 1, 5);
+    const rest = await Promise.all(Array.from({ length: count - 1 }, (_, index) => fetchPage(index + 2)));
+    return { ...classifyReleaseSearch<SearchRelease>([first, ...rest].flatMap(data => data.results), trimmed, getTodayDateString()), total_pages: 1 };
+  },
   // Public release calendar: future-only releases sorted by date, no login required
   discoverUpcomingPublic: async (type: 'movie' | 'series', window: 'week' | 'month' | 'soonest', page: number = 1) => {
     const dateKey = type === 'movie' ? 'primary_release_date' : 'first_air_date';

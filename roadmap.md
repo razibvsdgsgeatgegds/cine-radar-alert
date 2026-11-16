@@ -1,5 +1,7 @@
 # WatchVerse roadmap
 
+- [x] Repair public and dashboard title search through a shared service; real public movie/series search, past-title notices, and clearing verified; 10 tests passed. Signed-in dashboard verification remains unavailable with external unmanaged authentication.
+
 - [x] Refresh sign-in/signup presentation and onboarding into a premium cinema-themed experience without changing authentication rules; public signup/sign-in views verified on desktop/mobile.
 - [x] Implement authenticated AI picks from future-only candidates with server-profile taste data and safe fallback states; server typecheck and candidate validation tests passed.
 - [x] Add safe streaming-provider open links to movie/series cards; official/fallback URL tests passed.

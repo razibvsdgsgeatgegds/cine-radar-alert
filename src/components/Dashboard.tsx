@@ -57,31 +57,15 @@ export const Dashboard: React.FC = () => {
       setOldContentAlert(null);
       
       let moviesData, seriesData;
+      let pastAlert: string | null = null;
       
       if (query.trim()) {
-        const [allMoviesResult, allSeriesResult] = await Promise.all([
-          tmdbApi.searchMoviesAll(query, user.location.country, currentFilters.languages, currentFilters.industries),
-          tmdbApi.searchSeriesAll(query, user.location.country, currentFilters.languages, currentFilters.industries),
-        ]);
-        
-        const today = new Date().toISOString().split('T')[0];
-        const exactMovieMatch = allMoviesResult.results?.find((movie: Movie) => 
-          movie.title.toLowerCase() === query.toLowerCase() && movie.release_date < today
-        );
-        const exactSeriesMatch = allSeriesResult.results?.find((series: TVShow) => 
-          series.name.toLowerCase() === query.toLowerCase() && series.first_air_date < today
-        );
-        
-        if (exactMovieMatch) {
-          setOldContentAlert(`"${exactMovieMatch.title}" was released on ${tmdbApi.formatDate(exactMovieMatch.release_date)}`);
-        } else if (exactSeriesMatch) {
-          setOldContentAlert(`"${exactSeriesMatch.name}" was released on ${tmdbApi.formatDate(exactSeriesMatch.first_air_date)}`);
-        }
-        
         const [moviesResult, seriesResult] = await Promise.all([
-          tmdbApi.searchMovies(query, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.dateRange),
-          tmdbApi.searchSeries(query, user.location.country, currentFilters.languages, currentFilters.industries, currentFilters.dateRange),
+          tmdbApi.searchUpcoming('movie', query),
+          tmdbApi.searchUpcoming('series', query),
         ]);
+        const past = moviesResult.pastMatch || seriesResult.pastMatch;
+        if (past) pastAlert = `"${past.title || past.name}" was released on ${tmdbApi.formatDate(past.release_date || past.first_air_date || '')}`;
         moviesData = moviesResult;
         seriesData = seriesResult;
       } else {
@@ -97,6 +81,7 @@ export const Dashboard: React.FC = () => {
       }
 
       if (request !== requestId.current) return;
+      setOldContentAlert(pastAlert);
       const today = new Date().toISOString().split('T')[0];
       setMovies((moviesData.results || []).filter((item: Movie) => item.release_date >= today).slice(0, 12));
       setSeries((seriesData.results || []).filter((item: TVShow) => item.first_air_date >= today).slice(0, 12));
@@ -105,6 +90,9 @@ export const Dashboard: React.FC = () => {
         toast.success("Content refreshed with new upcoming releases!");
       }
     } catch (error) {
+      if (request !== requestId.current) return;
+      setMovies([]);
+      setSeries([]);
       console.error('Error fetching content:', error);
       toast.error("Failed to fetch content. Please try again later.");
     } finally {
@@ -179,6 +167,9 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleSearch = (query: string) => {
+    ++requestId.current;
+    setLoading(true);
+    setOldContentAlert(null);
     setSearchQuery(query);
     setCurrentPage(1);
 
@@ -267,6 +258,7 @@ export const Dashboard: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 type="text"
+                aria-label="Search movies and series"
                 placeholder="Search movies & series..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
@@ -308,7 +300,7 @@ export const Dashboard: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8"><Search className="w-12 h-12 mx-auto mb-2 opacity-50" /><p className="text-sm">No upcoming movies found for your preferences.</p></div>
+                  <div className="text-center text-muted-foreground py-8"><Search className="w-12 h-12 mx-auto mb-2 opacity-50" /><p className="text-sm">{searchQuery.trim() ? `No upcoming movies match "${searchQuery.trim()}".` : 'No upcoming movies found for your preferences.'}</p></div>
                 )}
               </CardContent>
             </section>
@@ -332,7 +324,7 @@ export const Dashboard: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8"><Search className="w-12 h-12 mx-auto mb-2 opacity-50" /><p className="text-sm">No upcoming series found for your preferences.</p></div>
+                  <div className="text-center text-muted-foreground py-8"><Search className="w-12 h-12 mx-auto mb-2 opacity-50" /><p className="text-sm">{searchQuery.trim() ? `No upcoming series match "${searchQuery.trim()}".` : 'No upcoming series found for your preferences.'}</p></div>
                 )}
               </CardContent>
             </section>
